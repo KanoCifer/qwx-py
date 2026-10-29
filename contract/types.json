@@ -1,0 +1,4959 @@
+{
+  "source": "https://github.com/KanoCifer/qwx",
+  "explicit_aliases": [
+    {
+      "package": "geo",
+      "type": "CityResult",
+      "go_field": "Locations",
+      "json_name": "location",
+      "py_name": "locations",
+      "reason": "to_camel(locations) = locations"
+    },
+    {
+      "package": "geo",
+      "type": "POIResult",
+      "go_field": "POIs",
+      "json_name": "poi",
+      "py_name": "pois",
+      "reason": "to_camel(pois) = pois"
+    },
+    {
+      "package": "geo",
+      "type": "RangeResult",
+      "go_field": "POIs",
+      "json_name": "poi",
+      "py_name": "pois",
+      "reason": "to_camel(pois) = pois"
+    },
+    {
+      "package": "geo",
+      "type": "TopCityResult",
+      "go_field": "Cities",
+      "json_name": "topCityList",
+      "py_name": "cities",
+      "reason": "to_camel(cities) = cities"
+    },
+    {
+      "package": "v7/historical",
+      "type": "Result",
+      "go_field": "Daily",
+      "json_name": "weatherDaily",
+      "py_name": "daily",
+      "reason": "to_camel(daily) = daily"
+    },
+    {
+      "package": "v7/historical",
+      "type": "Result",
+      "go_field": "Hourly",
+      "json_name": "weatherHourly",
+      "py_name": "hourly",
+      "reason": "to_camel(hourly) = hourly"
+    },
+    {
+      "package": "v7/storm",
+      "type": "ListResult",
+      "go_field": "Storms",
+      "json_name": "storm",
+      "py_name": "storms",
+      "reason": "to_camel(storms) = storms"
+    }
+  ],
+  "types": {
+    "v1.Metadata": {
+      "package": "v1",
+      "name": "Metadata",
+      "doc": "Metadata 是新一代接口统一的元数据块。",
+      "fields": [
+        {
+          "go_name": "Tag",
+          "json_name": "tag",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "tag",
+          "py_type": "str",
+          "alias": "tag",
+          "alias_mode": "自动",
+          "doc": "Tag 是本次响应的数据标签。"
+        },
+        {
+          "go_name": "Attributions",
+          "json_name": "attributions",
+          "go_type": "[]string",
+          "optional": false,
+          "py_name": "attributions",
+          "py_type": "list[str]",
+          "alias": "attributions",
+          "alias_mode": "自动",
+          "doc": "Attributions 是数据来源署名。展示数据时需要保留。"
+        },
+        {
+          "go_name": "ZeroResult",
+          "json_name": "zeroResult",
+          "go_type": "*bool",
+          "optional": true,
+          "py_name": "zero_result",
+          "py_type": "bool",
+          "alias": "zeroResult",
+          "alias_mode": "自动",
+          "doc": "ZeroResult 表示上游确实查了但结果为空。 老于该字段的接口版本没有这个字段，此时为 false —— 无法区分 「没查」与「查了是空」，调用方需要自己结合业务判断。"
+        }
+      ]
+    },
+    "v1.Options": {
+      "package": "v1",
+      "name": "Options",
+      "doc": "Options 是新一代端点共用的可选参数。 天气与预警两个端点族接受同一组参数，所以类型放在这里 —— 只服务单一 端点族的参数留在该端点族自己的包里。",
+      "fields": [
+        {
+          "go_name": "Lang",
+          "json_name": null,
+          "go_type": "qwx.Lang",
+          "optional": false,
+          "py_name": "lang",
+          "py_type": "Lang",
+          "alias": "",
+          "alias_mode": "无 tag",
+          "doc": "Lang 是语言，如 [github.com/KanoCifer/qwx.LangZH]。留空用上游默认。 上游默认是所在国家或地区的官方语言，没有官方语言时回退到英语。"
+        },
+        {
+          "go_name": "LocalTime",
+          "json_name": null,
+          "go_type": "bool",
+          "optional": false,
+          "py_name": "local_time",
+          "py_type": "bool",
+          "alias": "",
+          "alias_mode": "无 tag",
+          "doc": "LocalTime 是否返回查询地点的当地时间。 新一代接口默认给 UTC（\"2026-10-21T05:00Z\"），不传 localTime 时间会整整差 8 小时。除非明确要 UTC，否则应设为 true。"
+        }
+      ]
+    },
+    "v1.Value": {
+      "package": "v1",
+      "name": "Value",
+      "doc": "Value 是带单位的数值。 新一代接口把数值与单位拆开，不再像 v7 那样把单位拼进字符串。",
+      "fields": [
+        {
+          "go_name": "Value",
+          "json_name": "value",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "value",
+          "py_type": "float",
+          "alias": "value",
+          "alias_mode": "自动",
+          "doc": "Value 是数值。"
+        },
+        {
+          "go_name": "Unit",
+          "json_name": "unit",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "unit",
+          "py_type": "str",
+          "alias": "unit",
+          "alias_mode": "自动",
+          "doc": "Unit 是单位，如 \"°C\"、\"m/s\"、\"mm\"、\"hPa\"、\"m\"。"
+        }
+      ]
+    },
+    "core.Refer": {
+      "package": "core",
+      "name": "Refer",
+      "doc": "Refer 是数据来源与许可信息。 旧一代接口（/v7/*）与 GeoAPI 在响应里带一个 refer 对象，说明数据来源与 授权方式。新一代接口没有 refer —— 同样的意思由 metadata.attributions 表达。 展示这些数据时需要一并展示来源与许可声明。",
+      "fields": [
+        {
+          "go_name": "Sources",
+          "json_name": "sources",
+          "go_type": "[]string",
+          "optional": false,
+          "py_name": "sources",
+          "py_type": "list[str]",
+          "alias": "sources",
+          "alias_mode": "自动",
+          "doc": "Sources 是原始数据来源，或数据源说明。上游可能给空。"
+        },
+        {
+          "go_name": "License",
+          "json_name": "license",
+          "go_type": "[]string",
+          "optional": false,
+          "py_name": "license",
+          "py_type": "list[str]",
+          "alias": "license",
+          "alias_mode": "自动",
+          "doc": "License 是数据许可或版权声明。上游可能给空。"
+        }
+      ]
+    },
+    "core.MetaData": {
+      "package": "core",
+      "name": "MetaData",
+      "doc": "MetaData 是控制台 API 返回的元数据块。 响应里的 metadata 对象说明本次响应的数据标签与来源署名。展示上游数据时 需要保留 [MetaData.Attributions]。 新一代接口用的是 [github.com/KanoCifer/qwx/v1.Metadata]：它多一个 ZeroResult 字段，用来区分「没查」与「查了是空」。",
+      "fields": [
+        {
+          "go_name": "Tag",
+          "json_name": "tag",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "tag",
+          "py_type": "str",
+          "alias": "tag",
+          "alias_mode": "自动",
+          "doc": "Tag 是本次响应的数据标签。"
+        },
+        {
+          "go_name": "Attributions",
+          "json_name": "attributions",
+          "go_type": "[]string",
+          "optional": false,
+          "py_name": "attributions",
+          "py_type": "list[str]",
+          "alias": "attributions",
+          "alias_mode": "自动",
+          "doc": "Attributions 是数据来源署名。展示数据时需要保留。"
+        }
+      ]
+    },
+    "console.FinanceResult": {
+      "package": "console",
+      "name": "FinanceResult",
+      "doc": "FinanceResult 是财务汇总的结果。",
+      "fields": [
+        {
+          "go_name": "Metadata",
+          "json_name": "metadata",
+          "go_type": "qwx.MetaData",
+          "optional": false,
+          "py_name": "metadata",
+          "py_type": "MetaData",
+          "alias": "metadata",
+          "alias_mode": "自动",
+          "doc": "Metadata 是元数据。"
+        },
+        {
+          "go_name": "AsOf",
+          "json_name": "asOf",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "as_of",
+          "py_type": "str",
+          "alias": "asOf",
+          "alias_mode": "自动",
+          "doc": "AsOf 是数据的截止时间，如 \"2024-04-03T17:13Z\"。 上游给的是 UTC，原样透传。"
+        },
+        {
+          "go_name": "Currency",
+          "json_name": "currency",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "currency",
+          "py_type": "str",
+          "alias": "currency",
+          "alias_mode": "自动",
+          "doc": "Currency 是货币代码，如 \"CNY\"、\"USD\"。"
+        },
+        {
+          "go_name": "Balance",
+          "json_name": "balance",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "balance",
+          "py_type": "float",
+          "alias": "balance",
+          "alias_mode": "自动",
+          "doc": "Balance 是可用额度。负数表示欠费。"
+        },
+        {
+          "go_name": "AccruedCharges",
+          "json_name": "accruedCharges",
+          "go_type": "AccruedCharges",
+          "optional": false,
+          "py_name": "accrued_charges",
+          "py_type": "AccruedCharges",
+          "alias": "accruedCharges",
+          "alias_mode": "自动",
+          "doc": "AccruedCharges 是应计费用。"
+        },
+        {
+          "go_name": "PendingBills",
+          "json_name": "pendingBills",
+          "go_type": "[]PendingBill",
+          "optional": false,
+          "py_name": "pending_bills",
+          "py_type": "list[PendingBill]",
+          "alias": "pendingBills",
+          "alias_mode": "自动",
+          "doc": "PendingBills 是待支付的账单列表。"
+        },
+        {
+          "go_name": "AvailableSavingsPlans",
+          "json_name": "availableSavingsPlans",
+          "go_type": "[]SavingsPlan",
+          "optional": false,
+          "py_name": "available_savings_plans",
+          "py_type": "list[SavingsPlan]",
+          "alias": "availableSavingsPlans",
+          "alias_mode": "自动",
+          "doc": "AvailableSavingsPlans 是可用的节省计划列表。"
+        },
+        {
+          "go_name": "AvailableResourcePlans",
+          "json_name": "availableResourcePlans",
+          "go_type": "[]ResourcePlan",
+          "optional": false,
+          "py_name": "available_resource_plans",
+          "py_type": "list[ResourcePlan]",
+          "alias": "availableResourcePlans",
+          "alias_mode": "自动",
+          "doc": "AvailableResourcePlans 是可用的资源包列表。"
+        }
+      ]
+    },
+    "console.AccruedCharges": {
+      "package": "console",
+      "name": "AccruedCharges",
+      "doc": "AccruedCharges 是应计费用。",
+      "fields": [
+        {
+          "go_name": "PreviousDay",
+          "json_name": "previousDay",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "previous_day",
+          "py_type": "float",
+          "alias": "previousDay",
+          "alias_mode": "自动",
+          "doc": "PreviousDay 是前一天应计费用总额。"
+        },
+        {
+          "go_name": "ThisMonth",
+          "json_name": "thisMonth",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "this_month",
+          "py_type": "float",
+          "alias": "thisMonth",
+          "alias_mode": "自动",
+          "doc": "ThisMonth 是本月应计费用总额。"
+        },
+        {
+          "go_name": "SinceLastBill",
+          "json_name": "sinceLastBill",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "since_last_bill",
+          "py_type": "float",
+          "alias": "sinceLastBill",
+          "alias_mode": "自动",
+          "doc": "SinceLastBill 是从上次出账以来的应计费用总额。"
+        }
+      ]
+    },
+    "console.PendingBill": {
+      "package": "console",
+      "name": "PendingBill",
+      "doc": "PendingBill 是一张待支付的账单。",
+      "fields": [
+        {
+          "go_name": "Number",
+          "json_name": "number",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "number",
+          "py_type": "str",
+          "alias": "number",
+          "alias_mode": "自动",
+          "doc": "Number 是账单号。"
+        },
+        {
+          "go_name": "Date",
+          "json_name": "date",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "date",
+          "py_type": "str",
+          "alias": "date",
+          "alias_mode": "自动",
+          "doc": "Date 是出账日期，如 \"2024-04-01T10:00Z\"。 上游给的是 UTC，原样透传。"
+        },
+        {
+          "go_name": "Type",
+          "json_name": "type",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "type",
+          "py_type": "str",
+          "alias": "type",
+          "alias_mode": "自动",
+          "doc": "Type 是账单类型，如 \"PayAsYouGo\"、\"SavingsPlans\"。 官方会新增类型，不要依赖枚举的完备性。"
+        },
+        {
+          "go_name": "Status",
+          "json_name": "status",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "status",
+          "py_type": "str",
+          "alias": "status",
+          "alias_mode": "自动",
+          "doc": "Status 是账单状态，如 \"unpaid\"、\"overdue\"。 官方会新增状态，不要依赖枚举的完备性。"
+        },
+        {
+          "go_name": "Amount",
+          "json_name": "amount",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "amount",
+          "py_type": "float",
+          "alias": "amount",
+          "alias_mode": "自动",
+          "doc": "Amount 是账单总金额。"
+        },
+        {
+          "go_name": "AmountDue",
+          "json_name": "amountDue",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "amount_due",
+          "py_type": "float",
+          "alias": "amountDue",
+          "alias_mode": "自动",
+          "doc": "AmountDue 是剩余应付金额。"
+        },
+        {
+          "go_name": "DueDate",
+          "json_name": "dueDate",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "due_date",
+          "py_type": "str",
+          "alias": "dueDate",
+          "alias_mode": "自动",
+          "doc": "DueDate 是应付日期，如 \"2024-04-10T23:59Z\"。 上游给的是 UTC，原样透传。"
+        }
+      ]
+    },
+    "console.SavingsPlan": {
+      "package": "console",
+      "name": "SavingsPlan",
+      "doc": "SavingsPlan 是一个可用的节省计划。",
+      "fields": [
+        {
+          "go_name": "BillNumber",
+          "json_name": "billNumber",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "bill_number",
+          "py_type": "str",
+          "alias": "billNumber",
+          "alias_mode": "自动",
+          "doc": "BillNumber 是账单号。"
+        },
+        {
+          "go_name": "Status",
+          "json_name": "status",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "status",
+          "py_type": "str",
+          "alias": "status",
+          "alias_mode": "自动",
+          "doc": "Status 是计划状态，如 \"pending\"、\"active\"。 官方会新增状态，不要依赖枚举的完备性。"
+        },
+        {
+          "go_name": "Term",
+          "json_name": "term",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "term",
+          "py_type": "str",
+          "alias": "term",
+          "alias_mode": "自动",
+          "doc": "Term 是承诺期限，如 \"1\"。 上游给的是字符串，原样透传。"
+        },
+        {
+          "go_name": "Commitments",
+          "json_name": "commitments",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "commitments",
+          "py_type": "float",
+          "alias": "commitments",
+          "alias_mode": "自动",
+          "doc": "Commitments 是承诺金额。"
+        },
+        {
+          "go_name": "Utilized",
+          "json_name": "utilized",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "utilized",
+          "py_type": "float",
+          "alias": "utilized",
+          "alias_mode": "自动",
+          "doc": "Utilized 是已用承诺金额。"
+        },
+        {
+          "go_name": "EffectiveTime",
+          "json_name": "effectiveTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "effective_time",
+          "py_type": "str",
+          "alias": "effectiveTime",
+          "alias_mode": "自动",
+          "doc": "EffectiveTime 是生效时间，如 \"2024-04-30T13:00Z\"。 上游给的是 UTC，原样透传。"
+        }
+      ]
+    },
+    "console.ResourcePlan": {
+      "package": "console",
+      "name": "ResourcePlan",
+      "doc": "ResourcePlan 是一个可用的资源包。",
+      "fields": [
+        {
+          "go_name": "BillNumber",
+          "json_name": "billNumber",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "bill_number",
+          "py_type": "str",
+          "alias": "billNumber",
+          "alias_mode": "自动",
+          "doc": "BillNumber 是账单号。"
+        },
+        {
+          "go_name": "Status",
+          "json_name": "status",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "status",
+          "py_type": "str",
+          "alias": "status",
+          "alias_mode": "自动",
+          "doc": "Status 是资源包状态，如 \"pending\"、\"active\"。 官方会新增状态，不要依赖枚举的完备性。"
+        },
+        {
+          "go_name": "Requests",
+          "json_name": "requests",
+          "go_type": "json.Number",
+          "optional": false,
+          "py_name": "requests",
+          "py_type": "int | float | str",
+          "alias": "requests",
+          "alias_mode": "自动",
+          "doc": "Requests 是总请求量。 上游的返回样例给的是字符串（\"1000000\"），官方字段表标的是数字 —— 两种形态都用 [json.Number] 收，调用方按数值用： n, err := plan.Requests.Int64()"
+        },
+        {
+          "go_name": "Commitments",
+          "json_name": "commitments",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "commitments",
+          "py_type": "float",
+          "alias": "commitments",
+          "alias_mode": "自动",
+          "doc": "Commitments 是承诺金额。"
+        },
+        {
+          "go_name": "Utilized",
+          "json_name": "utilized",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "utilized",
+          "py_type": "float",
+          "alias": "utilized",
+          "alias_mode": "自动",
+          "doc": "Utilized 是已使用的请求数量。"
+        },
+        {
+          "go_name": "EffectiveTime",
+          "json_name": "effectiveTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "effective_time",
+          "py_type": "str",
+          "alias": "effectiveTime",
+          "alias_mode": "自动",
+          "doc": "EffectiveTime 是生效时间，如 \"2024-04-03T17:00Z\"。 上游给的是 UTC，原样透传。"
+        }
+      ]
+    },
+    "console.StatsResult": {
+      "package": "console",
+      "name": "StatsResult",
+      "doc": "StatsResult 是请求量统计的结果。",
+      "fields": [
+        {
+          "go_name": "Metadata",
+          "json_name": "metadata",
+          "go_type": "qwx.MetaData",
+          "optional": false,
+          "py_name": "metadata",
+          "py_type": "MetaData",
+          "alias": "metadata",
+          "alias_mode": "自动",
+          "doc": "Metadata 是元数据。"
+        },
+        {
+          "go_name": "AsOf",
+          "json_name": "asOf",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "as_of",
+          "py_type": "str",
+          "alias": "asOf",
+          "alias_mode": "自动",
+          "doc": "AsOf 是数据的截止时间，如 \"2025-05-12T02:59Z\"。 上游给的是 UTC，原样透传。"
+        },
+        {
+          "go_name": "Success",
+          "json_name": "success",
+          "go_type": "[]APICount",
+          "optional": false,
+          "py_name": "success",
+          "py_type": "list[APICount]",
+          "alias": "success",
+          "alias_mode": "自动",
+          "doc": "Success 是各 API 的成功请求量。"
+        },
+        {
+          "go_name": "Errors",
+          "json_name": "errors",
+          "go_type": "[]APICount",
+          "optional": false,
+          "py_name": "errors",
+          "py_type": "list[APICount]",
+          "alias": "errors",
+          "alias_mode": "自动",
+          "doc": "Errors 是各 API 的错误请求量。"
+        }
+      ]
+    },
+    "console.APICount": {
+      "package": "console",
+      "name": "APICount",
+      "doc": "APICount 是一个 API 的逐小时请求量。",
+      "fields": [
+        {
+          "go_name": "API",
+          "json_name": "api",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "api",
+          "py_type": "str",
+          "alias": "api",
+          "alias_mode": "自动",
+          "doc": "API 是 API 名称，如 \"Weather\"、\"Geo\"、\"AirQuality\"。 官方会新增名称，不要依赖枚举的完备性。"
+        },
+        {
+          "go_name": "Hours",
+          "json_name": "hours",
+          "go_type": "[]int",
+          "optional": false,
+          "py_name": "hours",
+          "py_type": "list[int]",
+          "alias": "hours",
+          "alias_mode": "自动",
+          "doc": "Hours 是最近 24 小时的逐小时请求量。 在 [StatsResult.Success] 里是成功请求量，在 [StatsResult.Errors] 里是 错误请求量。末位对应 AsOf 所在的那一小时：AsOf=2025-03-20T09:59Z 时， 末位是 09:00~09:59（UTC）的请求量。 上游可能给少于 24 条，不要假设长度。"
+        }
+      ]
+    },
+    "console.StatsOptions": {
+      "package": "console",
+      "name": "StatsOptions",
+      "doc": "StatsOptions 是请求量统计的可选参数。 项目与凭据两个过滤条件互斥，都留空时统计帐号下所有项目与凭据 （含已删除的 —— 已删除的项目或凭据无法单独查询，但请求量仍计入汇总）。",
+      "fields": [
+        {
+          "go_name": "Project",
+          "json_name": null,
+          "go_type": "string",
+          "optional": false,
+          "py_name": "project",
+          "py_type": "str",
+          "alias": "",
+          "alias_mode": "无 tag",
+          "doc": "Project 是项目 ID，只统计这个项目的请求量。 与 Credential 互斥。"
+        },
+        {
+          "go_name": "Credential",
+          "json_name": null,
+          "go_type": "string",
+          "optional": false,
+          "py_name": "credential",
+          "py_type": "str",
+          "alias": "",
+          "alias_mode": "无 tag",
+          "doc": "Credential 是凭据 ID，只统计这个凭据的请求量。 与 Project 互斥。"
+        }
+      ]
+    },
+    "geo.Options": {
+      "package": "geo",
+      "name": "Options",
+      "doc": "Options 是 GeoAPI 的可选参数。 四个检索端点接受的参数子集不同，各端点只上报自己认的参数：行政区划 只有城市检索认，搜索范围城市检索与热门城市认，限定城市只有 POI 检索认。",
+      "fields": [
+        {
+          "go_name": "Lang",
+          "json_name": null,
+          "go_type": "qwx.Lang",
+          "optional": false,
+          "py_name": "lang",
+          "py_type": "Lang",
+          "alias": "",
+          "alias_mode": "无 tag",
+          "doc": "Lang 是语言，如 [qwx.LangZH]。留空用上游默认。"
+        },
+        {
+          "go_name": "Number",
+          "json_name": null,
+          "go_type": "int",
+          "optional": false,
+          "py_name": "number",
+          "py_type": "int",
+          "alias": "",
+          "alias_mode": "无 tag",
+          "doc": "Number 是返回条数上限。0 用上游默认（10）。"
+        },
+        {
+          "go_name": "Adm",
+          "json_name": null,
+          "go_type": "string",
+          "optional": false,
+          "py_name": "adm",
+          "py_type": "str",
+          "alias": "",
+          "alias_mode": "无 tag",
+          "doc": "Adm 是上级行政区划的 LocationID，如 \"101010100\"。 用于排除重名城市或过滤结果。只有城市检索认这个参数。"
+        },
+        {
+          "go_name": "Range",
+          "json_name": null,
+          "go_type": "string",
+          "optional": false,
+          "py_name": "range",
+          "py_type": "str",
+          "alias": "",
+          "alias_mode": "无 tag",
+          "doc": "Range 是搜索范围，用 ISO 3166 国家代码，如 \"cn\"、\"world\"。 留空时上游在所有城市里搜，\"world\" 才能查到境外城市。 城市检索与热门城市认这个参数。"
+        },
+        {
+          "go_name": "City",
+          "json_name": null,
+          "go_type": "string",
+          "optional": false,
+          "py_name": "city",
+          "py_type": "str",
+          "alias": "",
+          "alias_mode": "无 tag",
+          "doc": "City 是限定 POI 所在城市，城市名或 LocationID，如 \"101010100\"。 城市名是精准匹配，匹配不上上游返回空。只有 POI 检索认这个参数。"
+        }
+      ]
+    },
+    "geo.POIRangeOptions": {
+      "package": "geo",
+      "name": "POIRangeOptions",
+      "doc": "POIRangeOptions 是 POI 范围检索的可选参数。",
+      "fields": [
+        {
+          "go_name": "Lang",
+          "json_name": null,
+          "go_type": "qwx.Lang",
+          "optional": false,
+          "py_name": "lang",
+          "py_type": "Lang",
+          "alias": "",
+          "alias_mode": "无 tag",
+          "doc": "Lang 是语言，如 [qwx.LangZH]。留空用上游默认。"
+        },
+        {
+          "go_name": "Number",
+          "json_name": null,
+          "go_type": "int",
+          "optional": false,
+          "py_name": "number",
+          "py_type": "int",
+          "alias": "",
+          "alias_mode": "无 tag",
+          "doc": "Number 是返回条数上限。0 用上游默认（10）。"
+        },
+        {
+          "go_name": "Radius",
+          "json_name": null,
+          "go_type": "int",
+          "optional": false,
+          "py_name": "radius",
+          "py_type": "int",
+          "alias": "",
+          "alias_mode": "无 tag",
+          "doc": "Radius 是搜索半径（公里）。0 用上游默认（5）。"
+        }
+      ]
+    },
+    "geo.Place": {
+      "package": "geo",
+      "name": "Place",
+      "doc": "Place 是一个地点条目。 GeoAPI 的几个检索接口（城市检索、POI 检索、热门城市）返回的条目 结构一致，用同一个类型。",
+      "fields": [
+        {
+          "go_name": "ID",
+          "json_name": "id",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "id",
+          "py_type": "str",
+          "alias": "id",
+          "alias_mode": "自动",
+          "doc": "ID 是 LocationID。"
+        },
+        {
+          "go_name": "Name",
+          "json_name": "name",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "name",
+          "py_type": "str",
+          "alias": "name",
+          "alias_mode": "自动",
+          "doc": "Name 是地名（如 \"东城\"）。"
+        },
+        {
+          "go_name": "Lat",
+          "json_name": "lat",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "lat",
+          "py_type": "str",
+          "alias": "lat",
+          "alias_mode": "自动",
+          "doc": "Lat 是纬度。"
+        },
+        {
+          "go_name": "Lon",
+          "json_name": "lon",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "lon",
+          "py_type": "str",
+          "alias": "lon",
+          "alias_mode": "自动",
+          "doc": "Lon 是经度。"
+        },
+        {
+          "go_name": "Adm1",
+          "json_name": "adm1",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "adm1",
+          "py_type": "str",
+          "alias": "adm1",
+          "alias_mode": "自动",
+          "doc": "Adm1 是一级行政区（省/直辖市），如 \"北京市\"。"
+        },
+        {
+          "go_name": "Adm2",
+          "json_name": "adm2",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "adm2",
+          "py_type": "str",
+          "alias": "adm2",
+          "alias_mode": "自动",
+          "doc": "Adm2 是二级行政区（城市），如 \"北京\"。"
+        },
+        {
+          "go_name": "Country",
+          "json_name": "country",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "country",
+          "py_type": "str",
+          "alias": "country",
+          "alias_mode": "自动",
+          "doc": "Country 是国家，如 \"中国\"。"
+        },
+        {
+          "go_name": "TZ",
+          "json_name": "tz",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "tz",
+          "py_type": "str",
+          "alias": "tz",
+          "alias_mode": "自动",
+          "doc": "TZ 是时区，如 \"Asia/Shanghai\"。"
+        },
+        {
+          "go_name": "UTCOffset",
+          "json_name": "utcOffset",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "utc_offset",
+          "py_type": "str",
+          "alias": "utcOffset",
+          "alias_mode": "自动",
+          "doc": "UTCOffset 是 UTC 偏移，如 \"+08:00\"。"
+        },
+        {
+          "go_name": "IsDst",
+          "json_name": "isDst",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "is_dst",
+          "py_type": "str",
+          "alias": "isDst",
+          "alias_mode": "自动",
+          "doc": "IsDst 是是否夏令时（\"0\" / \"1\"）。"
+        },
+        {
+          "go_name": "Type",
+          "json_name": "type",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "type",
+          "py_type": "str",
+          "alias": "type",
+          "alias_mode": "自动",
+          "doc": "Type 是地点类型，如 \"city\"、\"scenic\"。"
+        },
+        {
+          "go_name": "Rank",
+          "json_name": "rank",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "rank",
+          "py_type": "str",
+          "alias": "rank",
+          "alias_mode": "自动",
+          "doc": "Rank 是地点排名，数字越小越重要。"
+        },
+        {
+          "go_name": "FXLink",
+          "json_name": "fxLink",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "fx_link",
+          "py_type": "str",
+          "alias": "fxLink",
+          "alias_mode": "自动",
+          "doc": "FXLink 是该地点在和风天气官网的链接。"
+        }
+      ]
+    },
+    "geo.CityResult": {
+      "package": "geo",
+      "name": "CityResult",
+      "doc": "CityResult 是城市检索的结果。",
+      "fields": [
+        {
+          "go_name": "Code",
+          "json_name": "code",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "code",
+          "py_type": "str",
+          "alias": "code",
+          "alias_mode": "自动",
+          "doc": "Code 是上游状态码，\"200\" 为成功。"
+        },
+        {
+          "go_name": "Locations",
+          "json_name": "location",
+          "go_type": "[]Place",
+          "optional": false,
+          "py_name": "locations",
+          "py_type": "list[Place]",
+          "alias": "location",
+          "alias_mode": "显式",
+          "doc": "Locations 是匹配到的地点。"
+        },
+        {
+          "go_name": "Refer",
+          "json_name": "refer",
+          "go_type": "Refer",
+          "optional": false,
+          "py_name": "refer",
+          "py_type": "Refer",
+          "alias": "refer",
+          "alias_mode": "自动",
+          "doc": "Refer 是数据来源与许可信息。"
+        }
+      ]
+    },
+    "geo.POIResult": {
+      "package": "geo",
+      "name": "POIResult",
+      "doc": "POIResult 是 POI 检索的结果。",
+      "fields": [
+        {
+          "go_name": "Code",
+          "json_name": "code",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "code",
+          "py_type": "str",
+          "alias": "code",
+          "alias_mode": "自动",
+          "doc": "Code 是上游状态码。"
+        },
+        {
+          "go_name": "POIs",
+          "json_name": "poi",
+          "go_type": "[]Place",
+          "optional": false,
+          "py_name": "pois",
+          "py_type": "list[Place]",
+          "alias": "poi",
+          "alias_mode": "显式",
+          "doc": "POIs 是匹配到的 POI。"
+        },
+        {
+          "go_name": "Refer",
+          "json_name": "refer",
+          "go_type": "Refer",
+          "optional": false,
+          "py_name": "refer",
+          "py_type": "Refer",
+          "alias": "refer",
+          "alias_mode": "自动",
+          "doc": "Refer 是数据来源与许可信息。"
+        }
+      ]
+    },
+    "geo.RangeResult": {
+      "package": "geo",
+      "name": "RangeResult",
+      "doc": "RangeResult 是 POI 范围检索的结果。",
+      "fields": [
+        {
+          "go_name": "Code",
+          "json_name": "code",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "code",
+          "py_type": "str",
+          "alias": "code",
+          "alias_mode": "自动",
+          "doc": "Code 是上游状态码。"
+        },
+        {
+          "go_name": "POIs",
+          "json_name": "poi",
+          "go_type": "[]Place",
+          "optional": false,
+          "py_name": "pois",
+          "py_type": "list[Place]",
+          "alias": "poi",
+          "alias_mode": "显式",
+          "doc": "POIs 是范围内的 POI。"
+        },
+        {
+          "go_name": "Refer",
+          "json_name": "refer",
+          "go_type": "Refer",
+          "optional": false,
+          "py_name": "refer",
+          "py_type": "Refer",
+          "alias": "refer",
+          "alias_mode": "自动",
+          "doc": "Refer 是数据来源与许可信息。"
+        }
+      ]
+    },
+    "geo.TopCityResult": {
+      "package": "geo",
+      "name": "TopCityResult",
+      "doc": "TopCityResult 是热门城市检索的结果。",
+      "fields": [
+        {
+          "go_name": "Code",
+          "json_name": "code",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "code",
+          "py_type": "str",
+          "alias": "code",
+          "alias_mode": "自动",
+          "doc": "Code 是上游状态码。"
+        },
+        {
+          "go_name": "Cities",
+          "json_name": "topCityList",
+          "go_type": "[]Place",
+          "optional": false,
+          "py_name": "cities",
+          "py_type": "list[Place]",
+          "alias": "topCityList",
+          "alias_mode": "显式",
+          "doc": "Cities 是热门城市列表。"
+        },
+        {
+          "go_name": "Refer",
+          "json_name": "refer",
+          "go_type": "Refer",
+          "optional": false,
+          "py_name": "refer",
+          "py_type": "Refer",
+          "alias": "refer",
+          "alias_mode": "自动",
+          "doc": "Refer 是数据来源与许可信息。"
+        }
+      ]
+    },
+    "v1/airquality.Options": {
+      "package": "v1/airquality",
+      "name": "Options",
+      "doc": "Options 是空气质量接口的可选参数。",
+      "fields": [
+        {
+          "go_name": "Lang",
+          "json_name": null,
+          "go_type": "qwx.Lang",
+          "optional": false,
+          "py_name": "lang",
+          "py_type": "Lang",
+          "alias": "",
+          "alias_mode": "无 tag",
+          "doc": "Lang 是语言，如 [qwx.LangZH]。留空用上游默认。"
+        }
+      ]
+    },
+    "v1/airquality.Index": {
+      "package": "v1/airquality",
+      "name": "Index",
+      "doc": "Index 是一个 AQI 指数条目。",
+      "fields": [
+        {
+          "go_name": "Code",
+          "json_name": "code",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "code",
+          "py_type": "str",
+          "alias": "code",
+          "alias_mode": "自动",
+          "doc": "Code 是标准代码，如 \"us-epa\"、\"qaqi\"。"
+        },
+        {
+          "go_name": "Name",
+          "json_name": "name",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "name",
+          "py_type": "str",
+          "alias": "name",
+          "alias_mode": "自动",
+          "doc": "Name 是标准名称，如 \"AQI (US)\"。"
+        },
+        {
+          "go_name": "AQI",
+          "json_name": "aqi",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "aqi",
+          "py_type": "float",
+          "alias": "aqi",
+          "alias_mode": "自动",
+          "doc": "AQI 是指数值。 不同标准的量纲不同（QAQI 是 0~1，US EPA 是 0~500），不要跨标准比较。"
+        },
+        {
+          "go_name": "AQIDisplay",
+          "json_name": "aqiDisplay",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "aqi_display",
+          "py_type": "str",
+          "alias": "aqiDisplay",
+          "alias_mode": "自动",
+          "doc": "AQIDisplay 是上游给的可读形式。"
+        },
+        {
+          "go_name": "Level",
+          "json_name": "level",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "level",
+          "py_type": "str",
+          "alias": "level",
+          "alias_mode": "自动",
+          "doc": "Level 是等级（\"1\" ~ \"6\"）。"
+        },
+        {
+          "go_name": "Category",
+          "json_name": "category",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "category",
+          "py_type": "str",
+          "alias": "category",
+          "alias_mode": "自动",
+          "doc": "Category 是等级描述，如 \"Good\"、\"Excellent\"。"
+        },
+        {
+          "go_name": "Color",
+          "json_name": "color",
+          "go_type": "Color",
+          "optional": false,
+          "py_name": "color",
+          "py_type": "Color",
+          "alias": "color",
+          "alias_mode": "自动",
+          "doc": "Color 是等级对应的颜色。"
+        },
+        {
+          "go_name": "PrimaryPollutant",
+          "json_name": "primaryPollutant",
+          "go_type": "*PollutantBrief",
+          "optional": true,
+          "py_name": "primary_pollutant",
+          "py_type": "PollutantBrief",
+          "alias": "primaryPollutant",
+          "alias_mode": "自动",
+          "doc": "PrimaryPollutant 是首要污染物。可能是 nil（空气很好时无首要污染物）。"
+        },
+        {
+          "go_name": "Health",
+          "json_name": "health",
+          "go_type": "*Health",
+          "optional": true,
+          "py_name": "health",
+          "py_type": "Health",
+          "alias": "health",
+          "alias_mode": "自动",
+          "doc": "Health 是健康建议。"
+        }
+      ]
+    },
+    "v1/airquality.PollutantBrief": {
+      "package": "v1/airquality",
+      "name": "PollutantBrief",
+      "doc": "PollutantBrief 是污染物的简要信息。",
+      "fields": [
+        {
+          "go_name": "Code",
+          "json_name": "code",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "code",
+          "py_type": "str",
+          "alias": "code",
+          "alias_mode": "自动",
+          "doc": "Code 是污染物代码，如 \"pm2p5\"。"
+        },
+        {
+          "go_name": "Name",
+          "json_name": "name",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "name",
+          "py_type": "str",
+          "alias": "name",
+          "alias_mode": "自动",
+          "doc": "Name 是名称，如 \"PM 2.5\"。"
+        },
+        {
+          "go_name": "FullName",
+          "json_name": "fullName",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "full_name",
+          "py_type": "str",
+          "alias": "fullName",
+          "alias_mode": "自动",
+          "doc": "FullName 是全称。"
+        }
+      ]
+    },
+    "v1/airquality.Health": {
+      "package": "v1/airquality",
+      "name": "Health",
+      "doc": "Health 是健康影响与建议。",
+      "fields": [
+        {
+          "go_name": "Effect",
+          "json_name": "effect",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "effect",
+          "py_type": "str",
+          "alias": "effect",
+          "alias_mode": "自动",
+          "doc": "Effect 是健康影响说明。"
+        },
+        {
+          "go_name": "Advice",
+          "json_name": "advice",
+          "go_type": "Advice",
+          "optional": false,
+          "py_name": "advice",
+          "py_type": "Advice",
+          "alias": "advice",
+          "alias_mode": "自动",
+          "doc": "Advice 是分人群的活动建议。"
+        }
+      ]
+    },
+    "v1/airquality.Advice": {
+      "package": "v1/airquality",
+      "name": "Advice",
+      "doc": "Advice 是分人群建议。",
+      "fields": [
+        {
+          "go_name": "GeneralPopulation",
+          "json_name": "generalPopulation",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "general_population",
+          "py_type": "str",
+          "alias": "generalPopulation",
+          "alias_mode": "自动",
+          "doc": "GeneralPopulation 是普通人群的建议。"
+        },
+        {
+          "go_name": "SensitivePopulation",
+          "json_name": "sensitivePopulation",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "sensitive_population",
+          "py_type": "str",
+          "alias": "sensitivePopulation",
+          "alias_mode": "自动",
+          "doc": "SensitivePopulation 是敏感人群的建议。"
+        }
+      ]
+    },
+    "v1/airquality.Pollutant": {
+      "package": "v1/airquality",
+      "name": "Pollutant",
+      "doc": "Pollutant 是一个污染物的实测数据。",
+      "fields": [
+        {
+          "go_name": "Code",
+          "json_name": "code",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "code",
+          "py_type": "str",
+          "alias": "code",
+          "alias_mode": "自动",
+          "doc": "Code 是污染物代码。"
+        },
+        {
+          "go_name": "Name",
+          "json_name": "name",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "name",
+          "py_type": "str",
+          "alias": "name",
+          "alias_mode": "自动",
+          "doc": "Name 是名称。"
+        },
+        {
+          "go_name": "FullName",
+          "json_name": "fullName",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "full_name",
+          "py_type": "str",
+          "alias": "fullName",
+          "alias_mode": "自动",
+          "doc": "FullName 是全称。"
+        },
+        {
+          "go_name": "Concentration",
+          "json_name": "concentration",
+          "go_type": "v1.Value",
+          "optional": false,
+          "py_name": "concentration",
+          "py_type": "Value",
+          "alias": "concentration",
+          "alias_mode": "自动",
+          "doc": "Concentration 是浓度值。"
+        },
+        {
+          "go_name": "SubIndexes",
+          "json_name": "subIndexes",
+          "go_type": "[]SubIndex",
+          "optional": false,
+          "py_name": "sub_indexes",
+          "py_type": "list[SubIndex]",
+          "alias": "subIndexes",
+          "alias_mode": "自动",
+          "doc": "SubIndexes 是该污染物在各标准下的分指数。"
+        }
+      ]
+    },
+    "v1/airquality.SubIndex": {
+      "package": "v1/airquality",
+      "name": "SubIndex",
+      "doc": "SubIndex 是一个污染物在某标准下的分指数。",
+      "fields": [
+        {
+          "go_name": "Code",
+          "json_name": "code",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "code",
+          "py_type": "str",
+          "alias": "code",
+          "alias_mode": "自动",
+          "doc": "Code 是标准代码。"
+        },
+        {
+          "go_name": "AQI",
+          "json_name": "aqi",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "aqi",
+          "py_type": "float",
+          "alias": "aqi",
+          "alias_mode": "自动",
+          "doc": "AQI 是分指数值。"
+        },
+        {
+          "go_name": "AQIDisplay",
+          "json_name": "aqiDisplay",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "aqi_display",
+          "py_type": "str",
+          "alias": "aqiDisplay",
+          "alias_mode": "自动",
+          "doc": "AQIDisplay 是可读形式。"
+        }
+      ]
+    },
+    "v1/airquality.Station": {
+      "package": "v1/airquality",
+      "name": "Station",
+      "doc": "Station 是一个监测站。",
+      "fields": [
+        {
+          "go_name": "ID",
+          "json_name": "id",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "id",
+          "py_type": "str",
+          "alias": "id",
+          "alias_mode": "自动",
+          "doc": "ID 是站点 ID，如 \"P51762\"。"
+        },
+        {
+          "go_name": "Name",
+          "json_name": "name",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "name",
+          "py_type": "str",
+          "alias": "name",
+          "alias_mode": "自动",
+          "doc": "Name 是站点名称。"
+        }
+      ]
+    },
+    "v1/airquality.Current": {
+      "package": "v1/airquality",
+      "name": "Current",
+      "doc": "Current 是实时空气质量。",
+      "fields": [
+        {
+          "go_name": "Metadata",
+          "json_name": "metadata",
+          "go_type": "v1.Metadata",
+          "optional": false,
+          "py_name": "metadata",
+          "py_type": "Metadata",
+          "alias": "metadata",
+          "alias_mode": "自动",
+          "doc": "Metadata 是元数据。"
+        },
+        {
+          "go_name": "Indexes",
+          "json_name": "indexes",
+          "go_type": "[]Index",
+          "optional": false,
+          "py_name": "indexes",
+          "py_type": "list[Index]",
+          "alias": "indexes",
+          "alias_mode": "自动",
+          "doc": "Indexes 是各标准的 AQI 指数。"
+        },
+        {
+          "go_name": "Pollutants",
+          "json_name": "pollutants",
+          "go_type": "[]Pollutant",
+          "optional": false,
+          "py_name": "pollutants",
+          "py_type": "list[Pollutant]",
+          "alias": "pollutants",
+          "alias_mode": "自动",
+          "doc": "Pollutants 是各污染物的实测数据。"
+        },
+        {
+          "go_name": "Stations",
+          "json_name": "stations",
+          "go_type": "[]Station",
+          "optional": false,
+          "py_name": "stations",
+          "py_type": "list[Station]",
+          "alias": "stations",
+          "alias_mode": "自动",
+          "doc": "Stations 是附近的监测站。"
+        }
+      ]
+    },
+    "v1/airquality.DailyForecast": {
+      "package": "v1/airquality",
+      "name": "DailyForecast",
+      "doc": "DailyForecast 是逐日空气质量预报。",
+      "fields": [
+        {
+          "go_name": "Metadata",
+          "json_name": "metadata",
+          "go_type": "v1.Metadata",
+          "optional": false,
+          "py_name": "metadata",
+          "py_type": "Metadata",
+          "alias": "metadata",
+          "alias_mode": "自动",
+          "doc": "Metadata 是元数据。"
+        },
+        {
+          "go_name": "Days",
+          "json_name": "days",
+          "go_type": "[]Day",
+          "optional": false,
+          "py_name": "days",
+          "py_type": "list[Day]",
+          "alias": "days",
+          "alias_mode": "自动",
+          "doc": "Days 是逐日预报。"
+        }
+      ]
+    },
+    "v1/airquality.Day": {
+      "package": "v1/airquality",
+      "name": "Day",
+      "doc": "Day 是一天的空气质量预报。",
+      "fields": [
+        {
+          "go_name": "ForecastStartTime",
+          "json_name": "forecastStartTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "forecast_start_time",
+          "py_type": "str",
+          "alias": "forecastStartTime",
+          "alias_mode": "自动",
+          "doc": "ForecastStartTime 是预报起始时刻。"
+        },
+        {
+          "go_name": "ForecastEndTime",
+          "json_name": "forecastEndTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "forecast_end_time",
+          "py_type": "str",
+          "alias": "forecastEndTime",
+          "alias_mode": "自动",
+          "doc": "ForecastEndTime 是预报结束时刻。"
+        },
+        {
+          "go_name": "Indexes",
+          "json_name": "indexes",
+          "go_type": "[]Index",
+          "optional": false,
+          "py_name": "indexes",
+          "py_type": "list[Index]",
+          "alias": "indexes",
+          "alias_mode": "自动",
+          "doc": "Indexes 是各标准的 AQI 指数。"
+        },
+        {
+          "go_name": "Pollutants",
+          "json_name": "pollutants",
+          "go_type": "[]Pollutant",
+          "optional": false,
+          "py_name": "pollutants",
+          "py_type": "list[Pollutant]",
+          "alias": "pollutants",
+          "alias_mode": "自动",
+          "doc": "Pollutants 是各污染物的预报浓度。"
+        }
+      ]
+    },
+    "v1/airquality.HourlyForecast": {
+      "package": "v1/airquality",
+      "name": "HourlyForecast",
+      "doc": "HourlyForecast 是逐小时空气质量预报。",
+      "fields": [
+        {
+          "go_name": "Metadata",
+          "json_name": "metadata",
+          "go_type": "v1.Metadata",
+          "optional": false,
+          "py_name": "metadata",
+          "py_type": "Metadata",
+          "alias": "metadata",
+          "alias_mode": "自动",
+          "doc": "Metadata 是元数据。"
+        },
+        {
+          "go_name": "Hours",
+          "json_name": "hours",
+          "go_type": "[]Hour",
+          "optional": false,
+          "py_name": "hours",
+          "py_type": "list[Hour]",
+          "alias": "hours",
+          "alias_mode": "自动",
+          "doc": "Hours 是逐小时预报。"
+        }
+      ]
+    },
+    "v1/airquality.Hour": {
+      "package": "v1/airquality",
+      "name": "Hour",
+      "doc": "Hour 是一小时的空气质量预报。",
+      "fields": [
+        {
+          "go_name": "ForecastTime",
+          "json_name": "forecastTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "forecast_time",
+          "py_type": "str",
+          "alias": "forecastTime",
+          "alias_mode": "自动",
+          "doc": "ForecastTime 是预报时刻。"
+        },
+        {
+          "go_name": "Indexes",
+          "json_name": "indexes",
+          "go_type": "[]Index",
+          "optional": false,
+          "py_name": "indexes",
+          "py_type": "list[Index]",
+          "alias": "indexes",
+          "alias_mode": "自动",
+          "doc": "Indexes 是各标准的 AQI 指数。"
+        },
+        {
+          "go_name": "Pollutants",
+          "json_name": "pollutants",
+          "go_type": "[]Pollutant",
+          "optional": false,
+          "py_name": "pollutants",
+          "py_type": "list[Pollutant]",
+          "alias": "pollutants",
+          "alias_mode": "自动",
+          "doc": "Pollutants 是各污染物的预报浓度。"
+        }
+      ]
+    },
+    "v1/airquality.StationData": {
+      "package": "v1/airquality",
+      "name": "StationData",
+      "doc": "StationData 是单个监测站的污染物数据。",
+      "fields": [
+        {
+          "go_name": "Metadata",
+          "json_name": "metadata",
+          "go_type": "v1.Metadata",
+          "optional": false,
+          "py_name": "metadata",
+          "py_type": "Metadata",
+          "alias": "metadata",
+          "alias_mode": "自动",
+          "doc": "Metadata 是元数据。"
+        },
+        {
+          "go_name": "Pollutants",
+          "json_name": "pollutants",
+          "go_type": "[]Pollutant",
+          "optional": false,
+          "py_name": "pollutants",
+          "py_type": "list[Pollutant]",
+          "alias": "pollutants",
+          "alias_mode": "自动",
+          "doc": "Pollutants 是各污染物的实测数据。"
+        }
+      ]
+    },
+    "v1/airquality.Color": {
+      "package": "v1/airquality",
+      "name": "Color",
+      "doc": "Color 是颜色。 只有空气质量接口用这个形状，预警的预警颜色带 code 字段，两者是不同类型。",
+      "fields": [
+        {
+          "go_name": "Red",
+          "json_name": "red",
+          "go_type": "int",
+          "optional": false,
+          "py_name": "red",
+          "py_type": "int",
+          "alias": "red",
+          "alias_mode": "自动",
+          "doc": "Red 是红通道。"
+        },
+        {
+          "go_name": "Green",
+          "json_name": "green",
+          "go_type": "int",
+          "optional": false,
+          "py_name": "green",
+          "py_type": "int",
+          "alias": "green",
+          "alias_mode": "自动",
+          "doc": "Green 是绿通道。"
+        },
+        {
+          "go_name": "Blue",
+          "json_name": "blue",
+          "go_type": "int",
+          "optional": false,
+          "py_name": "blue",
+          "py_type": "int",
+          "alias": "blue",
+          "alias_mode": "自动",
+          "doc": "Blue 是蓝通道。"
+        },
+        {
+          "go_name": "Alpha",
+          "json_name": "alpha",
+          "go_type": "int",
+          "optional": false,
+          "py_name": "alpha",
+          "py_type": "int",
+          "alias": "alpha",
+          "alias_mode": "自动",
+          "doc": "Alpha 是透明度。"
+        }
+      ]
+    },
+    "v1/alert.Alert": {
+      "package": "v1/alert",
+      "name": "Alert",
+      "doc": "Alert 是一条预警。",
+      "fields": [
+        {
+          "go_name": "ID",
+          "json_name": "id",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "id",
+          "py_type": "str",
+          "alias": "id",
+          "alias_mode": "自动",
+          "doc": "ID 是预警 ID。"
+        },
+        {
+          "go_name": "SenderName",
+          "json_name": "senderName",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "sender_name",
+          "py_type": "str",
+          "alias": "senderName",
+          "alias_mode": "自动",
+          "doc": "SenderName 是发布机构，如 \"临桂区气象台\"。"
+        },
+        {
+          "go_name": "IssuedTime",
+          "json_name": "issuedTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "issued_time",
+          "py_type": "str",
+          "alias": "issuedTime",
+          "alias_mode": "自动",
+          "doc": "IssuedTime 是发布时间。"
+        },
+        {
+          "go_name": "MessageType",
+          "json_name": "messageType",
+          "go_type": "MessageType",
+          "optional": false,
+          "py_name": "message_type",
+          "py_type": "MessageType",
+          "alias": "messageType",
+          "alias_mode": "自动",
+          "doc": "MessageType 是消息类型。"
+        },
+        {
+          "go_name": "EventType",
+          "json_name": "eventType",
+          "go_type": "EventType",
+          "optional": false,
+          "py_name": "event_type",
+          "py_type": "EventType",
+          "alias": "eventType",
+          "alias_mode": "自动",
+          "doc": "EventType 是事件类型。"
+        },
+        {
+          "go_name": "Urgency",
+          "json_name": "urgency",
+          "go_type": "*string",
+          "optional": true,
+          "py_name": "urgency",
+          "py_type": "str",
+          "alias": "urgency",
+          "alias_mode": "自动",
+          "doc": "Urgency 是紧急程度。可能为 nil。"
+        },
+        {
+          "go_name": "Severity",
+          "json_name": "severity",
+          "go_type": "*string",
+          "optional": true,
+          "py_name": "severity",
+          "py_type": "str",
+          "alias": "severity",
+          "alias_mode": "自动",
+          "doc": "Severity 是严重程度。可能为 nil。"
+        },
+        {
+          "go_name": "Certainty",
+          "json_name": "certainty",
+          "go_type": "*string",
+          "optional": true,
+          "py_name": "certainty",
+          "py_type": "str",
+          "alias": "certainty",
+          "alias_mode": "自动",
+          "doc": "Certainty 是确定性。可能为 nil。"
+        },
+        {
+          "go_name": "Icon",
+          "json_name": "icon",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "icon",
+          "py_type": "str",
+          "alias": "icon",
+          "alias_mode": "自动",
+          "doc": "Icon 是预警图标代码。"
+        },
+        {
+          "go_name": "Color",
+          "json_name": "color",
+          "go_type": "Color",
+          "optional": false,
+          "py_name": "color",
+          "py_type": "Color",
+          "alias": "color",
+          "alias_mode": "自动",
+          "doc": "Color 是预警颜色。"
+        },
+        {
+          "go_name": "EffectiveTime",
+          "json_name": "effectiveTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "effective_time",
+          "py_type": "str",
+          "alias": "effectiveTime",
+          "alias_mode": "自动",
+          "doc": "EffectiveTime 是生效时间。"
+        },
+        {
+          "go_name": "OnsetTime",
+          "json_name": "onsetTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "onset_time",
+          "py_type": "str",
+          "alias": "onsetTime",
+          "alias_mode": "自动",
+          "doc": "OnsetTime 是开始时间。"
+        },
+        {
+          "go_name": "ExpireTime",
+          "json_name": "expireTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "expire_time",
+          "py_type": "str",
+          "alias": "expireTime",
+          "alias_mode": "自动",
+          "doc": "ExpireTime 是失效时间。"
+        },
+        {
+          "go_name": "Headline",
+          "json_name": "headline",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "headline",
+          "py_type": "str",
+          "alias": "headline",
+          "alias_mode": "自动",
+          "doc": "Headline 是预警标题。"
+        },
+        {
+          "go_name": "Description",
+          "json_name": "description",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "description",
+          "py_type": "str",
+          "alias": "description",
+          "alias_mode": "自动",
+          "doc": "Description 是预警描述全文。"
+        },
+        {
+          "go_name": "Criteria",
+          "json_name": "criteria",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "criteria",
+          "py_type": "str",
+          "alias": "criteria",
+          "alias_mode": "自动",
+          "doc": "Criteria 是预警的触发标准。"
+        },
+        {
+          "go_name": "ResponseTypes",
+          "json_name": "responseTypes",
+          "go_type": "[]string",
+          "optional": false,
+          "py_name": "response_types",
+          "py_type": "list[str]",
+          "alias": "responseTypes",
+          "alias_mode": "自动",
+          "doc": "ResponseTypes 是建议的响应措施。"
+        },
+        {
+          "go_name": "Instruction",
+          "json_name": "instruction",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "instruction",
+          "py_type": "str",
+          "alias": "instruction",
+          "alias_mode": "自动",
+          "doc": "Instruction 是防御指南。"
+        }
+      ]
+    },
+    "v1/alert.MessageType": {
+      "package": "v1/alert",
+      "name": "MessageType",
+      "doc": "MessageType 是预警消息类型。",
+      "fields": [
+        {
+          "go_name": "Code",
+          "json_name": "code",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "code",
+          "py_type": "str",
+          "alias": "code",
+          "alias_mode": "自动",
+          "doc": "Code 是消息类型代码，如 \"update\"、\"alert\"。"
+        },
+        {
+          "go_name": "Supersedes",
+          "json_name": "supersedes",
+          "go_type": "[]string",
+          "optional": false,
+          "py_name": "supersedes",
+          "py_type": "list[str]",
+          "alias": "supersedes",
+          "alias_mode": "自动",
+          "doc": "Supersedes 是本条预警更新/替代的历史预警 ID。"
+        }
+      ]
+    },
+    "v1/alert.EventType": {
+      "package": "v1/alert",
+      "name": "EventType",
+      "doc": "EventType 是预警事件类型。",
+      "fields": [
+        {
+          "go_name": "Name",
+          "json_name": "name",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "name",
+          "py_type": "str",
+          "alias": "name",
+          "alias_mode": "自动",
+          "doc": "Name 是事件名称，如 \"大风\"。"
+        },
+        {
+          "go_name": "Code",
+          "json_name": "code",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "code",
+          "py_type": "str",
+          "alias": "code",
+          "alias_mode": "自动",
+          "doc": "Code 是事件代码，如 \"1006\"。 官方会新增代码，不要依赖枚举的完备性。"
+        }
+      ]
+    },
+    "v1/alert.Color": {
+      "package": "v1/alert",
+      "name": "Color",
+      "doc": "Color 是预警颜色。",
+      "fields": [
+        {
+          "go_name": "Code",
+          "json_name": "code",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "code",
+          "py_type": "str",
+          "alias": "code",
+          "alias_mode": "自动",
+          "doc": "Code 是颜色名，如 \"blue\"。"
+        },
+        {
+          "go_name": "Red",
+          "json_name": "red",
+          "go_type": "int",
+          "optional": false,
+          "py_name": "red",
+          "py_type": "int",
+          "alias": "red",
+          "alias_mode": "自动",
+          "doc": "Red 是红通道。"
+        },
+        {
+          "go_name": "Green",
+          "json_name": "green",
+          "go_type": "int",
+          "optional": false,
+          "py_name": "green",
+          "py_type": "int",
+          "alias": "green",
+          "alias_mode": "自动",
+          "doc": "Green 是绿通道。"
+        },
+        {
+          "go_name": "Blue",
+          "json_name": "blue",
+          "go_type": "int",
+          "optional": false,
+          "py_name": "blue",
+          "py_type": "int",
+          "alias": "blue",
+          "alias_mode": "自动",
+          "doc": "Blue 是蓝通道。"
+        },
+        {
+          "go_name": "Alpha",
+          "json_name": "alpha",
+          "go_type": "int",
+          "optional": false,
+          "py_name": "alpha",
+          "py_type": "int",
+          "alias": "alpha",
+          "alias_mode": "自动",
+          "doc": "Alpha 是透明度。"
+        }
+      ]
+    },
+    "v1/alert.Result": {
+      "package": "v1/alert",
+      "name": "Result",
+      "doc": "Result 是预警查询的结果。",
+      "fields": [
+        {
+          "go_name": "Metadata",
+          "json_name": "metadata",
+          "go_type": "v1.Metadata",
+          "optional": false,
+          "py_name": "metadata",
+          "py_type": "Metadata",
+          "alias": "metadata",
+          "alias_mode": "自动",
+          "doc": "Metadata 是元数据。"
+        },
+        {
+          "go_name": "Alerts",
+          "json_name": "alerts",
+          "go_type": "[]Alert",
+          "optional": false,
+          "py_name": "alerts",
+          "py_type": "list[Alert]",
+          "alias": "alerts",
+          "alias_mode": "自动",
+          "doc": "Alerts 是预警列表。 没有预警时上游返回空列表（metadata.zeroResult 为 true）。"
+        }
+      ]
+    },
+    "v1/solarradiation.Options": {
+      "package": "v1/solarradiation",
+      "name": "Options",
+      "doc": "Options 是太阳辐射预报接口的可选参数。",
+      "fields": [
+        {
+          "go_name": "LocalTime",
+          "json_name": null,
+          "go_type": "bool",
+          "optional": false,
+          "py_name": "local_time",
+          "py_type": "bool",
+          "alias": "",
+          "alias_mode": "无 tag",
+          "doc": "LocalTime 是否返回查询地点的当地时间。 新一代接口默认给 UTC，不传 localTime 时间会整整差 8 小时。"
+        },
+        {
+          "go_name": "Interval",
+          "json_name": null,
+          "go_type": "int",
+          "optional": false,
+          "py_name": "interval",
+          "py_type": "int",
+          "alias": "",
+          "alias_mode": "无 tag",
+          "doc": "Interval 是预报数据的时间间隔分钟数，只能是 15、30、60。 0 表示不传，用上游默认（60 分钟）。"
+        },
+        {
+          "go_name": "Tilt",
+          "json_name": null,
+          "go_type": "*int",
+          "optional": true,
+          "py_name": "tilt",
+          "py_type": "int",
+          "alias": "",
+          "alias_mode": "无 tag",
+          "doc": "Tilt 是光伏系统的倾斜角，0~90。 nil 表示不传。用指针区分「没有这个参数」与「倾斜角为 0」—— 平铺的光伏板倾斜角就是 0，0 是合法取值。"
+        },
+        {
+          "go_name": "Azimuth",
+          "json_name": null,
+          "go_type": "*int",
+          "optional": true,
+          "py_name": "azimuth",
+          "py_type": "int",
+          "alias": "",
+          "alias_mode": "无 tag",
+          "doc": "Azimuth 是光伏系统的方位角，0~359，0 表示正北。 nil 表示不传，0 是合法取值。"
+        },
+        {
+          "go_name": "Extra",
+          "json_name": null,
+          "go_type": "string",
+          "optional": false,
+          "py_name": "extra",
+          "py_type": "str",
+          "alias": "",
+          "alias_mode": "无 tag",
+          "doc": "Extra 是额外信息，如 \"weather\"、\"poa\"，多项用逗号分隔。 Extra 含 \"poa\" 时上游要求 tilt 与 azimuth 都传，缺一个会被拒绝。 取值原样进缓存键，所以 \"poa,weather\" 与 \"weather,poa\" 是两个键。"
+        }
+      ]
+    },
+    "v1/solarradiation.Result": {
+      "package": "v1/solarradiation",
+      "name": "Result",
+      "doc": "Result 是太阳辐射预报查询的结果。",
+      "fields": [
+        {
+          "go_name": "Metadata",
+          "json_name": "metadata",
+          "go_type": "v1.Metadata",
+          "optional": false,
+          "py_name": "metadata",
+          "py_type": "Metadata",
+          "alias": "metadata",
+          "alias_mode": "自动",
+          "doc": "Metadata 是元数据。"
+        },
+        {
+          "go_name": "Forecasts",
+          "json_name": "forecasts",
+          "go_type": "[]Forecast",
+          "optional": false,
+          "py_name": "forecasts",
+          "py_type": "list[Forecast]",
+          "alias": "forecasts",
+          "alias_mode": "自动",
+          "doc": "Forecasts 是太阳辐照预报数据列表。 条数由请求的 hours 与 interval 决定，但上游可能给得更少 —— 不要假设长度。"
+        }
+      ]
+    },
+    "v1/solarradiation.Forecast": {
+      "package": "v1/solarradiation",
+      "name": "Forecast",
+      "doc": "Forecast 是一个时刻的太阳辐射预报。",
+      "fields": [
+        {
+          "go_name": "ForecastTime",
+          "json_name": "forecastTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "forecast_time",
+          "py_type": "str",
+          "alias": "forecastTime",
+          "alias_mode": "自动",
+          "doc": "ForecastTime 是预报时刻。"
+        },
+        {
+          "go_name": "SolarAngle",
+          "json_name": "solarAngle",
+          "go_type": "SolarAngle",
+          "optional": false,
+          "py_name": "solar_angle",
+          "py_type": "SolarAngle",
+          "alias": "solarAngle",
+          "alias_mode": "自动",
+          "doc": "SolarAngle 是太阳角度。"
+        },
+        {
+          "go_name": "DNI",
+          "json_name": "dni",
+          "go_type": "v1.Value",
+          "optional": false,
+          "py_name": "dni",
+          "py_type": "Value",
+          "alias": "dni",
+          "alias_mode": "自动",
+          "doc": "DNI 是法向直接辐照。"
+        },
+        {
+          "go_name": "DHI",
+          "json_name": "dhi",
+          "go_type": "v1.Value",
+          "optional": false,
+          "py_name": "dhi",
+          "py_type": "Value",
+          "alias": "dhi",
+          "alias_mode": "自动",
+          "doc": "DHI 是散射水平面辐照。"
+        },
+        {
+          "go_name": "GHI",
+          "json_name": "ghi",
+          "go_type": "v1.Value",
+          "optional": false,
+          "py_name": "ghi",
+          "py_type": "Value",
+          "alias": "ghi",
+          "alias_mode": "自动",
+          "doc": "GHI 是总水平面辐照。"
+        },
+        {
+          "go_name": "Weather",
+          "json_name": "weather",
+          "go_type": "*Weather",
+          "optional": true,
+          "py_name": "weather",
+          "py_type": "Weather",
+          "alias": "weather",
+          "alias_mode": "自动",
+          "doc": "Weather 是基本天气数据。 上游只在请求了 extra=weather 时返回这个对象，其他情况为 nil。"
+        },
+        {
+          "go_name": "POA",
+          "json_name": "poa",
+          "go_type": "*POA",
+          "optional": true,
+          "py_name": "poa",
+          "py_type": "POA",
+          "alias": "poa",
+          "alias_mode": "自动",
+          "doc": "POA 是阵列平面辐照度。 上游只在请求了 extra=poa 时返回这个对象，其他情况为 nil。"
+        }
+      ]
+    },
+    "v1/solarradiation.SolarAngle": {
+      "package": "v1/solarradiation",
+      "name": "SolarAngle",
+      "doc": "SolarAngle 是太阳角度。",
+      "fields": [
+        {
+          "go_name": "Azimuth",
+          "json_name": "azimuth",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "azimuth",
+          "py_type": "float",
+          "alias": "azimuth",
+          "alias_mode": "自动",
+          "doc": "Azimuth 是太阳方位角，0~359，正北为 0 度。"
+        },
+        {
+          "go_name": "Elevation",
+          "json_name": "elevation",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "elevation",
+          "py_type": "float",
+          "alias": "elevation",
+          "alias_mode": "自动",
+          "doc": "Elevation 是太阳高度角。"
+        }
+      ]
+    },
+    "v1/solarradiation.Weather": {
+      "package": "v1/solarradiation",
+      "name": "Weather",
+      "doc": "Weather 是太阳辐射预报附带的基本天气数据。",
+      "fields": [
+        {
+          "go_name": "Temperature",
+          "json_name": "temperature",
+          "go_type": "v1.Value",
+          "optional": false,
+          "py_name": "temperature",
+          "py_type": "Value",
+          "alias": "temperature",
+          "alias_mode": "自动",
+          "doc": "Temperature 是温度。"
+        },
+        {
+          "go_name": "WindSpeed",
+          "json_name": "windSpeed",
+          "go_type": "v1.Value",
+          "optional": false,
+          "py_name": "wind_speed",
+          "py_type": "Value",
+          "alias": "windSpeed",
+          "alias_mode": "自动",
+          "doc": "WindSpeed 是风速。"
+        },
+        {
+          "go_name": "Humidity",
+          "json_name": "humidity",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "humidity",
+          "py_type": "float",
+          "alias": "humidity",
+          "alias_mode": "自动",
+          "doc": "Humidity 是相对湿度，单位是**百分数**（0~100）。 与新一代天气端点不同：那边给的是 0~1 的比例，这边给的是百分数。"
+        }
+      ]
+    },
+    "v1/solarradiation.POA": {
+      "package": "v1/solarradiation",
+      "name": "POA",
+      "doc": "POA 是阵列平面辐照度（Plane of Array）。",
+      "fields": [
+        {
+          "go_name": "Global",
+          "json_name": "global",
+          "go_type": "v1.Value",
+          "optional": false,
+          "py_name": "global",
+          "py_type": "Value",
+          "alias": "global",
+          "alias_mode": "自动",
+          "doc": "Global 是阵列平面总辐照度。"
+        },
+        {
+          "go_name": "Direct",
+          "json_name": "direct",
+          "go_type": "v1.Value",
+          "optional": false,
+          "py_name": "direct",
+          "py_type": "Value",
+          "alias": "direct",
+          "alias_mode": "自动",
+          "doc": "Direct 是阵列平面直接辐照度。"
+        },
+        {
+          "go_name": "Diffuse",
+          "json_name": "diffuse",
+          "go_type": "v1.Value",
+          "optional": false,
+          "py_name": "diffuse",
+          "py_type": "Value",
+          "alias": "diffuse",
+          "alias_mode": "自动",
+          "doc": "Diffuse 是阵列平面散射辐照度。"
+        },
+        {
+          "go_name": "Reflected",
+          "json_name": "reflected",
+          "go_type": "v1.Value",
+          "optional": false,
+          "py_name": "reflected",
+          "py_type": "Value",
+          "alias": "reflected",
+          "alias_mode": "自动",
+          "doc": "Reflected 是阵列平面反射辐照度。"
+        }
+      ]
+    },
+    "v1/weather.Condition": {
+      "package": "v1/weather",
+      "name": "Condition",
+      "doc": "Condition 是天气现象。",
+      "fields": [
+        {
+          "go_name": "Text",
+          "json_name": "text",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "text",
+          "py_type": "str",
+          "alias": "text",
+          "alias_mode": "自动",
+          "doc": "Text 是天气现象的文字描述，随 lang 变化。"
+        },
+        {
+          "go_name": "Code",
+          "json_name": "code",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "code",
+          "py_type": "str",
+          "alias": "code",
+          "alias_mode": "自动",
+          "doc": "Code 是天气现象代码，如 \"100\"（晴）、\"300\"（小雨）。 官方会新增代码，不要依赖枚举的完备性。"
+        }
+      ]
+    },
+    "v1/weather.WindDirection": {
+      "package": "v1/weather",
+      "name": "WindDirection",
+      "doc": "WindDirection 是风向。",
+      "fields": [
+        {
+          "go_name": "Degree",
+          "json_name": "degree",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "degree",
+          "py_type": "float",
+          "alias": "degree",
+          "alias_mode": "自动",
+          "doc": "Degree 是风向角度（0~360，0 为北）。"
+        },
+        {
+          "go_name": "Compass",
+          "json_name": "compass",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "compass",
+          "py_type": "str",
+          "alias": "compass",
+          "alias_mode": "自动",
+          "doc": "Compass 是 16 方位英文代码（如 \"sw\"、\"wnw\"），不是中文。"
+        }
+      ]
+    },
+    "v1/weather.Wind": {
+      "package": "v1/weather",
+      "name": "Wind",
+      "doc": "Wind 是风速与风向。",
+      "fields": [
+        {
+          "go_name": "Direction",
+          "json_name": "direction",
+          "go_type": "WindDirection",
+          "optional": false,
+          "py_name": "direction",
+          "py_type": "WindDirection",
+          "alias": "direction",
+          "alias_mode": "自动",
+          "doc": "Direction 是风向。"
+        },
+        {
+          "go_name": "Speed",
+          "json_name": "speed",
+          "go_type": "v1.Value",
+          "optional": false,
+          "py_name": "speed",
+          "py_type": "Value",
+          "alias": "speed",
+          "alias_mode": "自动",
+          "doc": "Speed 是风速。"
+        },
+        {
+          "go_name": "Scale",
+          "json_name": "scale",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "scale",
+          "py_type": "float",
+          "alias": "scale",
+          "alias_mode": "自动",
+          "doc": "Scale 是风力等级（蒲福风级）。"
+        }
+      ]
+    },
+    "v1/weather.WindGust": {
+      "package": "v1/weather",
+      "name": "WindGust",
+      "doc": "WindGust 是阵风。",
+      "fields": [
+        {
+          "go_name": "Value",
+          "json_name": "value",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "value",
+          "py_type": "float",
+          "alias": "value",
+          "alias_mode": "自动",
+          "doc": "Value 是阵风风速。"
+        },
+        {
+          "go_name": "Unit",
+          "json_name": "unit",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "unit",
+          "py_type": "str",
+          "alias": "unit",
+          "alias_mode": "自动",
+          "doc": "Unit 是单位。"
+        }
+      ]
+    },
+    "v1/weather.Precipitation": {
+      "package": "v1/weather",
+      "name": "Precipitation",
+      "doc": "Precipitation 是降水情况。",
+      "fields": [
+        {
+          "go_name": "Amount",
+          "json_name": "amount",
+          "go_type": "v1.Value",
+          "optional": false,
+          "py_name": "amount",
+          "py_type": "Value",
+          "alias": "amount",
+          "alias_mode": "自动",
+          "doc": "Amount 是降水量。"
+        },
+        {
+          "go_name": "Intensity",
+          "json_name": "intensity",
+          "go_type": "*v1.Value",
+          "optional": true,
+          "py_name": "intensity",
+          "py_type": "Value",
+          "alias": "intensity",
+          "alias_mode": "自动",
+          "doc": "Intensity 是降水强度。 实况与逐时预报有这个字段，逐日预报的白天/夜间时段没有 —— 用指针区分「没有」与「强度为 0」。"
+        },
+        {
+          "go_name": "Probability",
+          "json_name": "probability",
+          "go_type": "*float64",
+          "optional": true,
+          "py_name": "probability",
+          "py_type": "float",
+          "alias": "probability",
+          "alias_mode": "自动",
+          "doc": "Probability 是降水概率（0~1）。 实时天气接口没有这个字段，逐小时预报与逐日预报的白天/夜间时段 才有。用指针区分「没有」与「概率为 0」。"
+        },
+        {
+          "go_name": "Type",
+          "json_name": "type",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "type",
+          "py_type": "str",
+          "alias": "type",
+          "alias_mode": "自动",
+          "doc": "Type 是降水类型代码，如 \"rain\"、\"snow\"、\"none\"。 上游会新增类型，不要依赖枚举的完备性。"
+        }
+      ]
+    },
+    "v1/weather.Pressure": {
+      "package": "v1/weather",
+      "name": "Pressure",
+      "doc": "Pressure 是气压。",
+      "fields": [
+        {
+          "go_name": "Value",
+          "json_name": "value",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "value",
+          "py_type": "float",
+          "alias": "value",
+          "alias_mode": "自动",
+          "doc": "Value 是气压值。"
+        },
+        {
+          "go_name": "Unit",
+          "json_name": "unit",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "unit",
+          "py_type": "str",
+          "alias": "unit",
+          "alias_mode": "自动",
+          "doc": "Unit 是单位（hPa）。"
+        }
+      ]
+    },
+    "v1/weather.Visibility": {
+      "package": "v1/weather",
+      "name": "Visibility",
+      "doc": "Visibility 是能见度。",
+      "fields": [
+        {
+          "go_name": "Value",
+          "json_name": "value",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "value",
+          "py_type": "float",
+          "alias": "value",
+          "alias_mode": "自动",
+          "doc": "Value 是能见度值。"
+        },
+        {
+          "go_name": "Unit",
+          "json_name": "unit",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "unit",
+          "py_type": "str",
+          "alias": "unit",
+          "alias_mode": "自动",
+          "doc": "Unit 是单位（m）。"
+        }
+      ]
+    },
+    "v1/weather.DewPoint": {
+      "package": "v1/weather",
+      "name": "DewPoint",
+      "doc": "DewPoint 是露点温度。",
+      "fields": [
+        {
+          "go_name": "Value",
+          "json_name": "value",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "value",
+          "py_type": "float",
+          "alias": "value",
+          "alias_mode": "自动",
+          "doc": "Value 是露点温度。"
+        },
+        {
+          "go_name": "Unit",
+          "json_name": "unit",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "unit",
+          "py_type": "str",
+          "alias": "unit",
+          "alias_mode": "自动",
+          "doc": "Unit 是单位（°C）。"
+        }
+      ]
+    },
+    "v1/weather.CurrentWeather": {
+      "package": "v1/weather",
+      "name": "CurrentWeather",
+      "doc": "CurrentWeather 是实时天气。",
+      "fields": [
+        {
+          "go_name": "Metadata",
+          "json_name": "metadata",
+          "go_type": "v1.Metadata",
+          "optional": false,
+          "py_name": "metadata",
+          "py_type": "Metadata",
+          "alias": "metadata",
+          "alias_mode": "自动",
+          "doc": "Metadata 是元数据。"
+        },
+        {
+          "go_name": "Condition",
+          "json_name": "condition",
+          "go_type": "Condition",
+          "optional": false,
+          "py_name": "condition",
+          "py_type": "Condition",
+          "alias": "condition",
+          "alias_mode": "自动",
+          "doc": "Condition 是天气现象。"
+        },
+        {
+          "go_name": "Temperature",
+          "json_name": "temperature",
+          "go_type": "v1.Value",
+          "optional": false,
+          "py_name": "temperature",
+          "py_type": "Value",
+          "alias": "temperature",
+          "alias_mode": "自动",
+          "doc": "Temperature 是气温。"
+        },
+        {
+          "go_name": "FeelsLike",
+          "json_name": "feelsLike",
+          "go_type": "v1.Value",
+          "optional": false,
+          "py_name": "feels_like",
+          "py_type": "Value",
+          "alias": "feelsLike",
+          "alias_mode": "自动",
+          "doc": "FeelsLike 是体感温度。"
+        },
+        {
+          "go_name": "Humidity",
+          "json_name": "humidity",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "humidity",
+          "py_type": "float",
+          "alias": "humidity",
+          "alias_mode": "自动",
+          "doc": "Humidity 是相对湿度，**0~1 的比例**（不是百分数）。"
+        },
+        {
+          "go_name": "Wind",
+          "json_name": "wind",
+          "go_type": "Wind",
+          "optional": false,
+          "py_name": "wind",
+          "py_type": "Wind",
+          "alias": "wind",
+          "alias_mode": "自动",
+          "doc": "Wind 是风。"
+        },
+        {
+          "go_name": "WindGust",
+          "json_name": "windGust",
+          "go_type": "WindGust",
+          "optional": false,
+          "py_name": "wind_gust",
+          "py_type": "WindGust",
+          "alias": "windGust",
+          "alias_mode": "自动",
+          "doc": "WindGust 是阵风。"
+        },
+        {
+          "go_name": "Precipitation",
+          "json_name": "precipitation",
+          "go_type": "Precipitation",
+          "optional": false,
+          "py_name": "precipitation",
+          "py_type": "Precipitation",
+          "alias": "precipitation",
+          "alias_mode": "自动",
+          "doc": "Precipitation 是降水情况。"
+        },
+        {
+          "go_name": "Pressure",
+          "json_name": "pressure",
+          "go_type": "Pressure",
+          "optional": false,
+          "py_name": "pressure",
+          "py_type": "Pressure",
+          "alias": "pressure",
+          "alias_mode": "自动",
+          "doc": "Pressure 是气压。"
+        },
+        {
+          "go_name": "Visibility",
+          "json_name": "visibility",
+          "go_type": "Visibility",
+          "optional": false,
+          "py_name": "visibility",
+          "py_type": "Visibility",
+          "alias": "visibility",
+          "alias_mode": "自动",
+          "doc": "Visibility 是能见度。"
+        },
+        {
+          "go_name": "DewPoint",
+          "json_name": "dewPoint",
+          "go_type": "DewPoint",
+          "optional": false,
+          "py_name": "dew_point",
+          "py_type": "DewPoint",
+          "alias": "dewPoint",
+          "alias_mode": "自动",
+          "doc": "DewPoint 是露点。"
+        },
+        {
+          "go_name": "CloudCover",
+          "json_name": "cloudCover",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "cloud_cover",
+          "py_type": "float",
+          "alias": "cloudCover",
+          "alias_mode": "自动",
+          "doc": "CloudCover 是云量，**0~1 的比例**。"
+        },
+        {
+          "go_name": "UVIndex",
+          "json_name": "uvIndex",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "uv_index",
+          "py_type": "float",
+          "alias": "uvIndex",
+          "alias_mode": "自动",
+          "doc": "UVIndex 是紫外线指数。"
+        }
+      ]
+    },
+    "v1/weather.HourlyForecast": {
+      "package": "v1/weather",
+      "name": "HourlyForecast",
+      "doc": "HourlyForecast 是逐小时预报。",
+      "fields": [
+        {
+          "go_name": "Metadata",
+          "json_name": "metadata",
+          "go_type": "v1.Metadata",
+          "optional": false,
+          "py_name": "metadata",
+          "py_type": "Metadata",
+          "alias": "metadata",
+          "alias_mode": "自动",
+          "doc": "Metadata 是元数据。"
+        },
+        {
+          "go_name": "Hours",
+          "json_name": "hours",
+          "go_type": "[]Hourly",
+          "optional": false,
+          "py_name": "hours",
+          "py_type": "list[Hourly]",
+          "alias": "hours",
+          "alias_mode": "自动",
+          "doc": "Hours 是逐小时预报列表。 条数由请求的 hours 决定，但上游可能给得更少 —— 不要假设长度。"
+        }
+      ]
+    },
+    "v1/weather.Hourly": {
+      "package": "v1/weather",
+      "name": "Hourly",
+      "doc": "Hourly 是一个小时的预报。",
+      "fields": [
+        {
+          "go_name": "ForecastTime",
+          "json_name": "forecastTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "forecast_time",
+          "py_type": "str",
+          "alias": "forecastTime",
+          "alias_mode": "自动",
+          "doc": "ForecastTime 是预报时刻。"
+        },
+        {
+          "go_name": "Condition",
+          "json_name": "condition",
+          "go_type": "Condition",
+          "optional": false,
+          "py_name": "condition",
+          "py_type": "Condition",
+          "alias": "condition",
+          "alias_mode": "自动",
+          "doc": "Condition 是天气现象。"
+        },
+        {
+          "go_name": "Temperature",
+          "json_name": "temperature",
+          "go_type": "v1.Value",
+          "optional": false,
+          "py_name": "temperature",
+          "py_type": "Value",
+          "alias": "temperature",
+          "alias_mode": "自动",
+          "doc": "Temperature 是气温。"
+        },
+        {
+          "go_name": "FeelsLike",
+          "json_name": "feelsLike",
+          "go_type": "v1.Value",
+          "optional": false,
+          "py_name": "feels_like",
+          "py_type": "Value",
+          "alias": "feelsLike",
+          "alias_mode": "自动",
+          "doc": "FeelsLike 是体感温度。"
+        },
+        {
+          "go_name": "Humidity",
+          "json_name": "humidity",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "humidity",
+          "py_type": "float",
+          "alias": "humidity",
+          "alias_mode": "自动",
+          "doc": "Humidity 是相对湿度，0~1 的比例。"
+        },
+        {
+          "go_name": "Wind",
+          "json_name": "wind",
+          "go_type": "Wind",
+          "optional": false,
+          "py_name": "wind",
+          "py_type": "Wind",
+          "alias": "wind",
+          "alias_mode": "自动",
+          "doc": "Wind 是风。"
+        },
+        {
+          "go_name": "WindGust",
+          "json_name": "windGust",
+          "go_type": "WindGust",
+          "optional": false,
+          "py_name": "wind_gust",
+          "py_type": "WindGust",
+          "alias": "windGust",
+          "alias_mode": "自动",
+          "doc": "WindGust 是阵风。"
+        },
+        {
+          "go_name": "Precipitation",
+          "json_name": "precipitation",
+          "go_type": "Precipitation",
+          "optional": false,
+          "py_name": "precipitation",
+          "py_type": "Precipitation",
+          "alias": "precipitation",
+          "alias_mode": "自动",
+          "doc": "Precipitation 是降水情况，含概率。"
+        },
+        {
+          "go_name": "Pressure",
+          "json_name": "pressure",
+          "go_type": "Pressure",
+          "optional": false,
+          "py_name": "pressure",
+          "py_type": "Pressure",
+          "alias": "pressure",
+          "alias_mode": "自动",
+          "doc": "Pressure 是气压。"
+        },
+        {
+          "go_name": "Visibility",
+          "json_name": "visibility",
+          "go_type": "Visibility",
+          "optional": false,
+          "py_name": "visibility",
+          "py_type": "Visibility",
+          "alias": "visibility",
+          "alias_mode": "自动",
+          "doc": "Visibility 是能见度。"
+        },
+        {
+          "go_name": "DewPoint",
+          "json_name": "dewPoint",
+          "go_type": "DewPoint",
+          "optional": false,
+          "py_name": "dew_point",
+          "py_type": "DewPoint",
+          "alias": "dewPoint",
+          "alias_mode": "自动",
+          "doc": "DewPoint 是露点。"
+        },
+        {
+          "go_name": "CloudCover",
+          "json_name": "cloudCover",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "cloud_cover",
+          "py_type": "float",
+          "alias": "cloudCover",
+          "alias_mode": "自动",
+          "doc": "CloudCover 是云量，0~1 的比例。"
+        },
+        {
+          "go_name": "UVIndex",
+          "json_name": "uvIndex",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "uv_index",
+          "py_type": "float",
+          "alias": "uvIndex",
+          "alias_mode": "自动",
+          "doc": "UVIndex 是紫外线指数。"
+        }
+      ]
+    },
+    "v1/weather.DailyForecast": {
+      "package": "v1/weather",
+      "name": "DailyForecast",
+      "doc": "DailyForecast 是逐日预报。",
+      "fields": [
+        {
+          "go_name": "Metadata",
+          "json_name": "metadata",
+          "go_type": "v1.Metadata",
+          "optional": false,
+          "py_name": "metadata",
+          "py_type": "Metadata",
+          "alias": "metadata",
+          "alias_mode": "自动",
+          "doc": "Metadata 是元数据。"
+        },
+        {
+          "go_name": "Days",
+          "json_name": "days",
+          "go_type": "[]Daily",
+          "optional": false,
+          "py_name": "days",
+          "py_type": "list[Daily]",
+          "alias": "days",
+          "alias_mode": "自动",
+          "doc": "Days 是逐日预报列表。"
+        }
+      ]
+    },
+    "v1/weather.Daily": {
+      "package": "v1/weather",
+      "name": "Daily",
+      "doc": "Daily 是一天的预报。",
+      "fields": [
+        {
+          "go_name": "ForecastStartTime",
+          "json_name": "forecastStartTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "forecast_start_time",
+          "py_type": "str",
+          "alias": "forecastStartTime",
+          "alias_mode": "自动",
+          "doc": "ForecastStartTime 是预报起始时刻。"
+        },
+        {
+          "go_name": "ForecastEndTime",
+          "json_name": "forecastEndTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "forecast_end_time",
+          "py_type": "str",
+          "alias": "forecastEndTime",
+          "alias_mode": "自动",
+          "doc": "ForecastEndTime 是预报结束时刻。"
+        },
+        {
+          "go_name": "Astro",
+          "json_name": "astro",
+          "go_type": "*Astro",
+          "optional": true,
+          "py_name": "astro",
+          "py_type": "Astro",
+          "alias": "astro",
+          "alias_mode": "自动",
+          "doc": "Astro 是天文信息（日出日落、月相等）。 高纬度地区可能没有日出日落 —— 该字段可能缺失。"
+        },
+        {
+          "go_name": "TemperatureMax",
+          "json_name": "temperatureMax",
+          "go_type": "v1.Value",
+          "optional": false,
+          "py_name": "temperature_max",
+          "py_type": "Value",
+          "alias": "temperatureMax",
+          "alias_mode": "自动",
+          "doc": "TemperatureMax 是最高气温。"
+        },
+        {
+          "go_name": "TemperatureMin",
+          "json_name": "temperatureMin",
+          "go_type": "v1.Value",
+          "optional": false,
+          "py_name": "temperature_min",
+          "py_type": "Value",
+          "alias": "temperatureMin",
+          "alias_mode": "自动",
+          "doc": "TemperatureMin 是最低气温。"
+        },
+        {
+          "go_name": "TemperatureAvg",
+          "json_name": "temperatureAvg",
+          "go_type": "v1.Value",
+          "optional": false,
+          "py_name": "temperature_avg",
+          "py_type": "Value",
+          "alias": "temperatureAvg",
+          "alias_mode": "自动",
+          "doc": "TemperatureAvg 是平均气温。"
+        },
+        {
+          "go_name": "UVIndexMax",
+          "json_name": "uvIndexMax",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "uv_index_max",
+          "py_type": "float",
+          "alias": "uvIndexMax",
+          "alias_mode": "自动",
+          "doc": "UVIndexMax 是最大紫外线指数。"
+        },
+        {
+          "go_name": "Daytime",
+          "json_name": "daytime",
+          "go_type": "DayNight",
+          "optional": false,
+          "py_name": "daytime",
+          "py_type": "DayNight",
+          "alias": "daytime",
+          "alias_mode": "自动",
+          "doc": "Daytime 是白天时段（v7 时代是一天一条，新一代拆成白天/夜间两段）。"
+        },
+        {
+          "go_name": "Nighttime",
+          "json_name": "nighttime",
+          "go_type": "DayNight",
+          "optional": false,
+          "py_name": "nighttime",
+          "py_type": "DayNight",
+          "alias": "nighttime",
+          "alias_mode": "自动",
+          "doc": "Nighttime 是夜间时段。"
+        }
+      ]
+    },
+    "v1/weather.DayNight": {
+      "package": "v1/weather",
+      "name": "DayNight",
+      "doc": "DayNight 是白天或夜间时段的天气。",
+      "fields": [
+        {
+          "go_name": "ForecastStartTime",
+          "json_name": "forecastStartTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "forecast_start_time",
+          "py_type": "str",
+          "alias": "forecastStartTime",
+          "alias_mode": "自动",
+          "doc": "ForecastStartTime 是时段起始时刻。"
+        },
+        {
+          "go_name": "ForecastEndTime",
+          "json_name": "forecastEndTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "forecast_end_time",
+          "py_type": "str",
+          "alias": "forecastEndTime",
+          "alias_mode": "自动",
+          "doc": "ForecastEndTime 是时段结束时刻。"
+        },
+        {
+          "go_name": "Condition",
+          "json_name": "condition",
+          "go_type": "Condition",
+          "optional": false,
+          "py_name": "condition",
+          "py_type": "Condition",
+          "alias": "condition",
+          "alias_mode": "自动",
+          "doc": "Condition 是天气现象。"
+        },
+        {
+          "go_name": "TemperatureMax",
+          "json_name": "temperatureMax",
+          "go_type": "v1.Value",
+          "optional": false,
+          "py_name": "temperature_max",
+          "py_type": "Value",
+          "alias": "temperatureMax",
+          "alias_mode": "自动",
+          "doc": "TemperatureMax 是最高气温。"
+        },
+        {
+          "go_name": "TemperatureMin",
+          "json_name": "temperatureMin",
+          "go_type": "v1.Value",
+          "optional": false,
+          "py_name": "temperature_min",
+          "py_type": "Value",
+          "alias": "temperatureMin",
+          "alias_mode": "自动",
+          "doc": "TemperatureMin 是最低气温。"
+        },
+        {
+          "go_name": "Wind",
+          "json_name": "wind",
+          "go_type": "Wind",
+          "optional": false,
+          "py_name": "wind",
+          "py_type": "Wind",
+          "alias": "wind",
+          "alias_mode": "自动",
+          "doc": "Wind 是风。"
+        },
+        {
+          "go_name": "WindGustMax",
+          "json_name": "windGustMax",
+          "go_type": "WindGust",
+          "optional": false,
+          "py_name": "wind_gust_max",
+          "py_type": "WindGust",
+          "alias": "windGustMax",
+          "alias_mode": "自动",
+          "doc": "WindGustMax 是时段内的最大阵风。 上游 daily 端点的白天/夜间时段用 windGustMax，与 current、hourly 端点的 windGust 不是同一个键。"
+        },
+        {
+          "go_name": "Precipitation",
+          "json_name": "precipitation",
+          "go_type": "Precipitation",
+          "optional": false,
+          "py_name": "precipitation",
+          "py_type": "Precipitation",
+          "alias": "precipitation",
+          "alias_mode": "自动",
+          "doc": "Precipitation 是降水情况。"
+        },
+        {
+          "go_name": "Humidity",
+          "json_name": "humidity",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "humidity",
+          "py_type": "float",
+          "alias": "humidity",
+          "alias_mode": "自动",
+          "doc": "Humidity 是相对湿度，0~1 的比例。"
+        },
+        {
+          "go_name": "CloudCover",
+          "json_name": "cloudCover",
+          "go_type": "float64",
+          "optional": false,
+          "py_name": "cloud_cover",
+          "py_type": "float",
+          "alias": "cloudCover",
+          "alias_mode": "自动",
+          "doc": "CloudCover 是云量，0~1 的比例。"
+        }
+      ]
+    },
+    "v1/weather.Astro": {
+      "package": "v1/weather",
+      "name": "Astro",
+      "doc": "Astro 是天文信息。",
+      "fields": [
+        {
+          "go_name": "Sunrise",
+          "json_name": "sunrise",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "sunrise",
+          "py_type": "str",
+          "alias": "sunrise",
+          "alias_mode": "自动",
+          "doc": "Sunrise 是日出时刻。"
+        },
+        {
+          "go_name": "Sunset",
+          "json_name": "sunset",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "sunset",
+          "py_type": "str",
+          "alias": "sunset",
+          "alias_mode": "自动",
+          "doc": "Sunset 是日落时刻。"
+        },
+        {
+          "go_name": "AstronomicalDawn",
+          "json_name": "astronomicalDawn",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "astronomical_dawn",
+          "py_type": "str",
+          "alias": "astronomicalDawn",
+          "alias_mode": "自动",
+          "doc": "AstronomicalDawn 是天文曙光开始时刻。"
+        },
+        {
+          "go_name": "NauticalDawn",
+          "json_name": "nauticalDawn",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "nautical_dawn",
+          "py_type": "str",
+          "alias": "nauticalDawn",
+          "alias_mode": "自动",
+          "doc": "NauticalDawn 是航海曙光开始时刻。"
+        },
+        {
+          "go_name": "CivilDawn",
+          "json_name": "civilDawn",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "civil_dawn",
+          "py_type": "str",
+          "alias": "civilDawn",
+          "alias_mode": "自动",
+          "doc": "CivilDawn 是民用曙光开始时刻。"
+        },
+        {
+          "go_name": "AstronomicalDusk",
+          "json_name": "astronomicalDusk",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "astronomical_dusk",
+          "py_type": "str",
+          "alias": "astronomicalDusk",
+          "alias_mode": "自动",
+          "doc": "AstronomicalDusk 是天文暮光结束时刻。"
+        },
+        {
+          "go_name": "NauticalDusk",
+          "json_name": "nauticalDusk",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "nautical_dusk",
+          "py_type": "str",
+          "alias": "nauticalDusk",
+          "alias_mode": "自动",
+          "doc": "NauticalDusk 是航海暮光结束时刻。"
+        },
+        {
+          "go_name": "CivilDusk",
+          "json_name": "civilDusk",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "civil_dusk",
+          "py_type": "str",
+          "alias": "civilDusk",
+          "alias_mode": "自动",
+          "doc": "CivilDusk 是民用暮光结束时刻。"
+        },
+        {
+          "go_name": "SolarNoon",
+          "json_name": "solarNoon",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "solar_noon",
+          "py_type": "str",
+          "alias": "solarNoon",
+          "alias_mode": "自动",
+          "doc": "SolarNoon 是正午时刻。"
+        },
+        {
+          "go_name": "SolarMidnight",
+          "json_name": "solarMidnight",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "solar_midnight",
+          "py_type": "str",
+          "alias": "solarMidnight",
+          "alias_mode": "自动",
+          "doc": "SolarMidnight 是子夜时刻。"
+        },
+        {
+          "go_name": "Moonrise",
+          "json_name": "moonrise",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "moonrise",
+          "py_type": "str",
+          "alias": "moonrise",
+          "alias_mode": "自动",
+          "doc": "Moonrise 是月出时刻。"
+        },
+        {
+          "go_name": "Moonset",
+          "json_name": "moonset",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "moonset",
+          "py_type": "str",
+          "alias": "moonset",
+          "alias_mode": "自动",
+          "doc": "Moonset 是月落时刻。"
+        },
+        {
+          "go_name": "MoonTransit",
+          "json_name": "moonTransit",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "moon_transit",
+          "py_type": "str",
+          "alias": "moonTransit",
+          "alias_mode": "自动",
+          "doc": "MoonTransit 是月过中天时刻。"
+        },
+        {
+          "go_name": "MoonUnderfoot",
+          "json_name": "moonUnderfoot",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "moon_underfoot",
+          "py_type": "str",
+          "alias": "moonUnderfoot",
+          "alias_mode": "自动",
+          "doc": "MoonUnderfoot 是月球位于天顶的时刻。"
+        },
+        {
+          "go_name": "MoonPhase",
+          "json_name": "moonPhase",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "moon_phase",
+          "py_type": "str",
+          "alias": "moonPhase",
+          "alias_mode": "自动",
+          "doc": "MoonPhase 是月相代码，如 \"waxing-gibbous\"。"
+        }
+      ]
+    },
+    "v7/astronomy.Options": {
+      "package": "v7/astronomy",
+      "name": "Options",
+      "doc": "Options 是月相端点的可选参数。 只有月相端点认语言参数 —— 日出日落与太阳高度角不带语言。",
+      "fields": [
+        {
+          "go_name": "Lang",
+          "json_name": null,
+          "go_type": "qwx.Lang",
+          "optional": false,
+          "py_name": "lang",
+          "py_type": "Lang",
+          "alias": "",
+          "alias_mode": "无 tag",
+          "doc": "Lang 是语言，如 [qwx.LangZH]。留空用上游默认。"
+        }
+      ]
+    },
+    "v7/astronomy.SunResult": {
+      "package": "v7/astronomy",
+      "name": "SunResult",
+      "doc": "SunResult 是日出日落数据。",
+      "fields": [
+        {
+          "go_name": "Code",
+          "json_name": "code",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "code",
+          "py_type": "str",
+          "alias": "code",
+          "alias_mode": "自动",
+          "doc": "Code 是上游状态码，\"200\" 为成功。"
+        },
+        {
+          "go_name": "UpdateTime",
+          "json_name": "updateTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "update_time",
+          "py_type": "str",
+          "alias": "updateTime",
+          "alias_mode": "自动",
+          "doc": "UpdateTime 是数据更新时间。"
+        },
+        {
+          "go_name": "FXLink",
+          "json_name": "fxLink",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "fx_link",
+          "py_type": "str",
+          "alias": "fxLink",
+          "alias_mode": "自动",
+          "doc": "FXLink 是官网链接。"
+        },
+        {
+          "go_name": "Sunrise",
+          "json_name": "sunrise",
+          "go_type": "*string",
+          "optional": true,
+          "py_name": "sunrise",
+          "py_type": "str",
+          "alias": "sunrise",
+          "alias_mode": "自动",
+          "doc": "Sunrise 是日出时间。 上游在高纬度地区可能给 null，用指针区分\"没有日出\"与\"空串\"。"
+        },
+        {
+          "go_name": "Sunset",
+          "json_name": "sunset",
+          "go_type": "*string",
+          "optional": true,
+          "py_name": "sunset",
+          "py_type": "str",
+          "alias": "sunset",
+          "alias_mode": "自动",
+          "doc": "Sunset 是日落时间。 同 [SunResult.Sunrise]：极昼极夜地区可能为 null。"
+        },
+        {
+          "go_name": "Refer",
+          "json_name": "refer",
+          "go_type": "qwx.Refer",
+          "optional": false,
+          "py_name": "refer",
+          "py_type": "Refer",
+          "alias": "refer",
+          "alias_mode": "自动",
+          "doc": "Refer 是数据来源与许可信息。 上游在结果里带 refer 对象，展示这些数据时需要一并展示。"
+        }
+      ]
+    },
+    "v7/astronomy.MoonResult": {
+      "package": "v7/astronomy",
+      "name": "MoonResult",
+      "doc": "MoonResult 是月升月落和月相数据。",
+      "fields": [
+        {
+          "go_name": "Code",
+          "json_name": "code",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "code",
+          "py_type": "str",
+          "alias": "code",
+          "alias_mode": "自动",
+          "doc": "Code 是上游状态码，\"200\" 为成功。"
+        },
+        {
+          "go_name": "UpdateTime",
+          "json_name": "updateTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "update_time",
+          "py_type": "str",
+          "alias": "updateTime",
+          "alias_mode": "自动",
+          "doc": "UpdateTime 是数据更新时间。"
+        },
+        {
+          "go_name": "FXLink",
+          "json_name": "fxLink",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "fx_link",
+          "py_type": "str",
+          "alias": "fxLink",
+          "alias_mode": "自动",
+          "doc": "FXLink 是官网链接。"
+        },
+        {
+          "go_name": "Moonrise",
+          "json_name": "moonrise",
+          "go_type": "*string",
+          "optional": true,
+          "py_name": "moonrise",
+          "py_type": "str",
+          "alias": "moonrise",
+          "alias_mode": "自动",
+          "doc": "Moonrise 是当天月升时间。 上游说可能为空，用指针区分\"没有月升\"与\"空串\"。"
+        },
+        {
+          "go_name": "Moonset",
+          "json_name": "moonset",
+          "go_type": "*string",
+          "optional": true,
+          "py_name": "moonset",
+          "py_type": "str",
+          "alias": "moonset",
+          "alias_mode": "自动",
+          "doc": "Moonset 是当天月落时间。 同 [MoonResult.Moonrise]：可能为空。"
+        },
+        {
+          "go_name": "MoonPhase",
+          "json_name": "moonPhase",
+          "go_type": "[]MoonPhase",
+          "optional": false,
+          "py_name": "moon_phase",
+          "py_type": "list[MoonPhase]",
+          "alias": "moonPhase",
+          "alias_mode": "自动",
+          "doc": "MoonPhase 是逐小时月相。 列表长度不固定，不假设。"
+        },
+        {
+          "go_name": "Refer",
+          "json_name": "refer",
+          "go_type": "qwx.Refer",
+          "optional": false,
+          "py_name": "refer",
+          "py_type": "Refer",
+          "alias": "refer",
+          "alias_mode": "自动",
+          "doc": "Refer 是数据来源与许可信息。 上游在结果里带 refer 对象，展示这些数据时需要一并展示。"
+        }
+      ]
+    },
+    "v7/astronomy.MoonPhase": {
+      "package": "v7/astronomy",
+      "name": "MoonPhase",
+      "doc": "MoonPhase 是一小时的月相。",
+      "fields": [
+        {
+          "go_name": "FXTime",
+          "json_name": "fxTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "fx_time",
+          "py_type": "str",
+          "alias": "fxTime",
+          "alias_mode": "自动",
+          "doc": "FXTime 是月相预报时间。"
+        },
+        {
+          "go_name": "Value",
+          "json_name": "value",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "value",
+          "py_type": "str",
+          "alias": "value",
+          "alias_mode": "自动",
+          "doc": "Value 是月相数值。"
+        },
+        {
+          "go_name": "Name",
+          "json_name": "name",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "name",
+          "py_type": "str",
+          "alias": "name",
+          "alias_mode": "自动",
+          "doc": "Name 是月相名称，如 \"新月\"、\"满月\"。 名称随语言变，上游的取值也不止一种，这里只透传不写完备列表。"
+        },
+        {
+          "go_name": "Illumination",
+          "json_name": "illumination",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "illumination",
+          "py_type": "str",
+          "alias": "illumination",
+          "alias_mode": "自动",
+          "doc": "Illumination 是月亮照明度，百分比数值。 上游给的是字符串，这里保持字符串 —— 转成 float64 会丢掉它的表达精度。"
+        },
+        {
+          "go_name": "Icon",
+          "json_name": "icon",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "icon",
+          "py_type": "str",
+          "alias": "icon",
+          "alias_mode": "自动",
+          "doc": "Icon 是月相图标代码。"
+        }
+      ]
+    },
+    "v7/astronomy.AngleResult": {
+      "package": "v7/astronomy",
+      "name": "AngleResult",
+      "doc": "AngleResult 是太阳高度角数据。 上游这个端点的响应里没有 updateTime 与 fxLink，本类型也没有这两个字段。",
+      "fields": [
+        {
+          "go_name": "Code",
+          "json_name": "code",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "code",
+          "py_type": "str",
+          "alias": "code",
+          "alias_mode": "自动",
+          "doc": "Code 是上游状态码，\"200\" 为成功。"
+        },
+        {
+          "go_name": "SolarElevationAngle",
+          "json_name": "solarElevationAngle",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "solar_elevation_angle",
+          "py_type": "str",
+          "alias": "solarElevationAngle",
+          "alias_mode": "自动",
+          "doc": "SolarElevationAngle 是太阳高度角（度）。 上游给的是字符串，这里保持字符串 —— 转成 float64 会丢掉它的表达精度。"
+        },
+        {
+          "go_name": "SolarAzimuthAngle",
+          "json_name": "solarAzimuthAngle",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "solar_azimuth_angle",
+          "py_type": "str",
+          "alias": "solarAzimuthAngle",
+          "alias_mode": "自动",
+          "doc": "SolarAzimuthAngle 是太阳方位角（度），0 度为正北。 上游给的是字符串，这里保持字符串。"
+        },
+        {
+          "go_name": "SolarHour",
+          "json_name": "solarHour",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "solar_hour",
+          "py_type": "str",
+          "alias": "solarHour",
+          "alias_mode": "自动",
+          "doc": "SolarHour 是太阳时，\"HHmm\" 格式。"
+        },
+        {
+          "go_name": "HourAngle",
+          "json_name": "hourAngle",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "hour_angle",
+          "py_type": "str",
+          "alias": "hourAngle",
+          "alias_mode": "自动",
+          "doc": "HourAngle 是时角。"
+        },
+        {
+          "go_name": "Refer",
+          "json_name": "refer",
+          "go_type": "qwx.Refer",
+          "optional": false,
+          "py_name": "refer",
+          "py_type": "Refer",
+          "alias": "refer",
+          "alias_mode": "自动",
+          "doc": "Refer 是数据来源与许可信息。 上游在结果里带 refer 对象，展示这些数据时需要一并展示。"
+        }
+      ]
+    },
+    "v7/historical.Options": {
+      "package": "v7/historical",
+      "name": "Options",
+      "doc": "Options 是历史天气端点的可选参数。",
+      "fields": [
+        {
+          "go_name": "Lang",
+          "json_name": null,
+          "go_type": "qwx.Lang",
+          "optional": false,
+          "py_name": "lang",
+          "py_type": "Lang",
+          "alias": "",
+          "alias_mode": "无 tag",
+          "doc": "Lang 是语言，如 [qwx.LangZH]。留空用上游默认。"
+        }
+      ]
+    },
+    "v7/historical.Result": {
+      "package": "v7/historical",
+      "name": "Result",
+      "doc": "Result 是历史天气查询的结果。 上游这个端点的响应里没有 updateTime 与 fxLink 之外的元信息块，本类型 也没有对应的字段。",
+      "fields": [
+        {
+          "go_name": "Code",
+          "json_name": "code",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "code",
+          "py_type": "str",
+          "alias": "code",
+          "alias_mode": "自动",
+          "doc": "Code 是上游状态码，\"200\" 为成功。"
+        },
+        {
+          "go_name": "FXLink",
+          "json_name": "fxLink",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "fx_link",
+          "py_type": "str",
+          "alias": "fxLink",
+          "alias_mode": "自动",
+          "doc": "FXLink 是官网链接。"
+        },
+        {
+          "go_name": "Daily",
+          "json_name": "weatherDaily",
+          "go_type": "*Daily",
+          "optional": true,
+          "py_name": "daily",
+          "py_type": "Daily",
+          "alias": "weatherDaily",
+          "alias_mode": "显式",
+          "doc": "Daily 是当天的天气汇总。 上游用对象给这一天的汇总数据，不是数组。上游没给这一块时是 nil。"
+        },
+        {
+          "go_name": "Hourly",
+          "json_name": "weatherHourly",
+          "go_type": "[]Hourly",
+          "optional": false,
+          "py_name": "hourly",
+          "py_type": "list[Hourly]",
+          "alias": "weatherHourly",
+          "alias_mode": "显式",
+          "doc": "Hourly 是当天的逐小时历史天气。 列表长度不假设：上游可能给少于 24 条。"
+        },
+        {
+          "go_name": "Refer",
+          "json_name": "refer",
+          "go_type": "qwx.Refer",
+          "optional": false,
+          "py_name": "refer",
+          "py_type": "Refer",
+          "alias": "refer",
+          "alias_mode": "自动",
+          "doc": "Refer 是数据来源与许可信息。 上游在结果里带 refer 对象，展示这些数据时需要一并展示。"
+        }
+      ]
+    },
+    "v7/historical.Daily": {
+      "package": "v7/historical",
+      "name": "Daily",
+      "doc": "Daily 是一天的历史天气汇总。 上游把数值都包成字符串，这里保持字符串 —— 小数位数是上游的表达精度， 转成 float64 会丢掉它。",
+      "fields": [
+        {
+          "go_name": "Date",
+          "json_name": "date",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "date",
+          "py_type": "str",
+          "alias": "date",
+          "alias_mode": "自动",
+          "doc": "Date 是日期，\"YYYY-MM-DD\"。"
+        },
+        {
+          "go_name": "Sunrise",
+          "json_name": "sunrise",
+          "go_type": "*string",
+          "optional": true,
+          "py_name": "sunrise",
+          "py_type": "str",
+          "alias": "sunrise",
+          "alias_mode": "自动",
+          "doc": "Sunrise 是日出时间。 高纬度地区上游可能不给，用指针区分\"没有日出\"与\"空串\"。"
+        },
+        {
+          "go_name": "Sunset",
+          "json_name": "sunset",
+          "go_type": "*string",
+          "optional": true,
+          "py_name": "sunset",
+          "py_type": "str",
+          "alias": "sunset",
+          "alias_mode": "自动",
+          "doc": "Sunset 是日落时间。 同 [Daily.Sunrise]：极昼极夜地区可能不给。"
+        },
+        {
+          "go_name": "Moonrise",
+          "json_name": "moonrise",
+          "go_type": "*string",
+          "optional": true,
+          "py_name": "moonrise",
+          "py_type": "str",
+          "alias": "moonrise",
+          "alias_mode": "自动",
+          "doc": "Moonrise 是月升时间。上游可能不给。"
+        },
+        {
+          "go_name": "Moonset",
+          "json_name": "moonset",
+          "go_type": "*string",
+          "optional": true,
+          "py_name": "moonset",
+          "py_type": "str",
+          "alias": "moonset",
+          "alias_mode": "自动",
+          "doc": "Moonset 是月落时间。上游可能不给。"
+        },
+        {
+          "go_name": "MoonPhase",
+          "json_name": "moonPhase",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "moon_phase",
+          "py_type": "str",
+          "alias": "moonPhase",
+          "alias_mode": "自动",
+          "doc": "MoonPhase 是月相名称，如 \"峨眉月\"。 名称随语言变，上游的取值也不止一种，这里只透传不写完备列表。"
+        },
+        {
+          "go_name": "TempMax",
+          "json_name": "tempMax",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "temp_max",
+          "py_type": "str",
+          "alias": "tempMax",
+          "alias_mode": "自动",
+          "doc": "TempMax 是当天最高温度。"
+        },
+        {
+          "go_name": "TempMin",
+          "json_name": "tempMin",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "temp_min",
+          "py_type": "str",
+          "alias": "tempMin",
+          "alias_mode": "自动",
+          "doc": "TempMin 是当天最低温度。"
+        },
+        {
+          "go_name": "Humidity",
+          "json_name": "humidity",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "humidity",
+          "py_type": "str",
+          "alias": "humidity",
+          "alias_mode": "自动",
+          "doc": "Humidity 是当天相对湿度，百分比数值。"
+        },
+        {
+          "go_name": "Precip",
+          "json_name": "precip",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "precip",
+          "py_type": "str",
+          "alias": "precip",
+          "alias_mode": "自动",
+          "doc": "Precip 是当天总降水量，默认单位毫米。 空串表示\"无此数据\"，与 \"0.0\"（真的没下雨）不是一回事。"
+        },
+        {
+          "go_name": "Pressure",
+          "json_name": "pressure",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "pressure",
+          "py_type": "str",
+          "alias": "pressure",
+          "alias_mode": "自动",
+          "doc": "Pressure 是站点气压，默认单位百帕。"
+        }
+      ]
+    },
+    "v7/historical.Hourly": {
+      "package": "v7/historical",
+      "name": "Hourly",
+      "doc": "Hourly 是一小时的历史天气。 上游把数值都包成字符串，这里保持字符串 —— 小数位数是上游的表达精度， 转成 float64 会丢掉它。 上游个别小时可能不带风向与风速字段，缺失时是空串。",
+      "fields": [
+        {
+          "go_name": "Time",
+          "json_name": "time",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "time",
+          "py_type": "str",
+          "alias": "time",
+          "alias_mode": "自动",
+          "doc": "Time 是时刻，\"YYYY-MM-DD HH:mm\"。"
+        },
+        {
+          "go_name": "Temp",
+          "json_name": "temp",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "temp",
+          "py_type": "str",
+          "alias": "temp",
+          "alias_mode": "自动",
+          "doc": "Temp 是该小时的温度，默认单位摄氏度。"
+        },
+        {
+          "go_name": "Icon",
+          "json_name": "icon",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "icon",
+          "py_type": "str",
+          "alias": "icon",
+          "alias_mode": "自动",
+          "doc": "Icon 是天气状况的图标代码。"
+        },
+        {
+          "go_name": "Text",
+          "json_name": "text",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "text",
+          "py_type": "str",
+          "alias": "text",
+          "alias_mode": "自动",
+          "doc": "Text 是天气状况的文字描述，如 \"晴\"。 描述随语言变，上游的取值也不止一种，这里只透传不写完备列表。"
+        },
+        {
+          "go_name": "Wind360",
+          "json_name": "wind360",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "wind360",
+          "py_type": "str",
+          "alias": "wind360",
+          "alias_mode": "自动",
+          "doc": "Wind360 是风向 360 度角度。"
+        },
+        {
+          "go_name": "WindDir",
+          "json_name": "windDir",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "wind_dir",
+          "py_type": "str",
+          "alias": "windDir",
+          "alias_mode": "自动",
+          "doc": "WindDir 是风向，如 \"西南风\"。"
+        },
+        {
+          "go_name": "WindScale",
+          "json_name": "windScale",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "wind_scale",
+          "py_type": "str",
+          "alias": "windScale",
+          "alias_mode": "自动",
+          "doc": "WindScale 是风力等级。"
+        },
+        {
+          "go_name": "WindSpeed",
+          "json_name": "windSpeed",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "wind_speed",
+          "py_type": "str",
+          "alias": "windSpeed",
+          "alias_mode": "自动",
+          "doc": "WindSpeed 是风速，默认单位公里/小时。"
+        },
+        {
+          "go_name": "Humidity",
+          "json_name": "humidity",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "humidity",
+          "py_type": "str",
+          "alias": "humidity",
+          "alias_mode": "自动",
+          "doc": "Humidity 是该小时的相对湿度，百分比数值。"
+        },
+        {
+          "go_name": "Precip",
+          "json_name": "precip",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "precip",
+          "py_type": "str",
+          "alias": "precip",
+          "alias_mode": "自动",
+          "doc": "Precip 是该小时的降水量，默认单位毫米。 空串表示\"无此数据\"，与 \"0.0\"（真的没下雨）不是一回事。"
+        },
+        {
+          "go_name": "Pressure",
+          "json_name": "pressure",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "pressure",
+          "py_type": "str",
+          "alias": "pressure",
+          "alias_mode": "自动",
+          "doc": "Pressure 是站点气压，默认单位百帕。"
+        }
+      ]
+    },
+    "v7/indices.Result": {
+      "package": "v7/indices",
+      "name": "Result",
+      "doc": "Result 是生活指数查询的结果。",
+      "fields": [
+        {
+          "go_name": "Code",
+          "json_name": "code",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "code",
+          "py_type": "str",
+          "alias": "code",
+          "alias_mode": "自动",
+          "doc": "Code 是上游状态码，\"200\" 为成功。"
+        },
+        {
+          "go_name": "UpdateTime",
+          "json_name": "updateTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "update_time",
+          "py_type": "str",
+          "alias": "updateTime",
+          "alias_mode": "自动",
+          "doc": "UpdateTime 是数据更新时间。"
+        },
+        {
+          "go_name": "FXLink",
+          "json_name": "fxLink",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "fx_link",
+          "py_type": "str",
+          "alias": "fxLink",
+          "alias_mode": "自动",
+          "doc": "FXLink 是官网链接。"
+        },
+        {
+          "go_name": "Daily",
+          "json_name": "daily",
+          "go_type": "[]DailyIndex",
+          "optional": false,
+          "py_name": "daily",
+          "py_type": "list[DailyIndex]",
+          "alias": "daily",
+          "alias_mode": "自动",
+          "doc": "Daily 是逐日指数。"
+        },
+        {
+          "go_name": "Refer",
+          "json_name": "refer",
+          "go_type": "qwx.Refer",
+          "optional": false,
+          "py_name": "refer",
+          "py_type": "Refer",
+          "alias": "refer",
+          "alias_mode": "自动",
+          "doc": "Refer 是数据来源与许可信息。 上游在结果里带 refer 对象，展示这些数据时需要一并展示。"
+        }
+      ]
+    },
+    "v7/indices.DailyIndex": {
+      "package": "v7/indices",
+      "name": "DailyIndex",
+      "doc": "DailyIndex 是一天的生活指数。",
+      "fields": [
+        {
+          "go_name": "Date",
+          "json_name": "date",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "date",
+          "py_type": "str",
+          "alias": "date",
+          "alias_mode": "自动",
+          "doc": "Date 是日期，\"YYYY-MM-DD\"。"
+        },
+        {
+          "go_name": "Type",
+          "json_name": "type",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "type",
+          "py_type": "str",
+          "alias": "type",
+          "alias_mode": "自动",
+          "doc": "Type 是指数类型代码。"
+        },
+        {
+          "go_name": "Name",
+          "json_name": "name",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "name",
+          "py_type": "str",
+          "alias": "name",
+          "alias_mode": "自动",
+          "doc": "Name 是指数名称，如 \"运动指数\"。"
+        },
+        {
+          "go_name": "Level",
+          "json_name": "level",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "level",
+          "py_type": "str",
+          "alias": "level",
+          "alias_mode": "自动",
+          "doc": "Level 是等级。上游给的是字符串，这里保持字符串。"
+        },
+        {
+          "go_name": "Category",
+          "json_name": "category",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "category",
+          "py_type": "str",
+          "alias": "category",
+          "alias_mode": "自动",
+          "doc": "Category 是等级描述，如 \"较不宜\"。"
+        },
+        {
+          "go_name": "Text",
+          "json_name": "text",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "text",
+          "py_type": "str",
+          "alias": "text",
+          "alias_mode": "自动",
+          "doc": "Text 是详细说明。"
+        }
+      ]
+    },
+    "v7/minutely.Result": {
+      "package": "v7/minutely",
+      "name": "Result",
+      "doc": "Result 是分钟级降水预报的结果。",
+      "fields": [
+        {
+          "go_name": "Code",
+          "json_name": "code",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "code",
+          "py_type": "str",
+          "alias": "code",
+          "alias_mode": "自动",
+          "doc": "Code 是上游状态码，\"200\" 为成功。"
+        },
+        {
+          "go_name": "UpdateTime",
+          "json_name": "updateTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "update_time",
+          "py_type": "str",
+          "alias": "updateTime",
+          "alias_mode": "自动",
+          "doc": "UpdateTime 是数据更新时间。"
+        },
+        {
+          "go_name": "FXLink",
+          "json_name": "fxLink",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "fx_link",
+          "py_type": "str",
+          "alias": "fxLink",
+          "alias_mode": "自动",
+          "doc": "FXLink 是官网链接。"
+        },
+        {
+          "go_name": "Summary",
+          "json_name": "summary",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "summary",
+          "py_type": "str",
+          "alias": "summary",
+          "alias_mode": "自动",
+          "doc": "Summary 是一句话摘要，如 \"95分钟后雨就停了\"。"
+        },
+        {
+          "go_name": "Minutely",
+          "json_name": "minutely",
+          "go_type": "[]Minutely",
+          "optional": false,
+          "py_name": "minutely",
+          "py_type": "list[Minutely]",
+          "alias": "minutely",
+          "alias_mode": "自动",
+          "doc": "Minutely 是逐 5 分钟的降水预报。"
+        },
+        {
+          "go_name": "Refer",
+          "json_name": "refer",
+          "go_type": "qwx.Refer",
+          "optional": false,
+          "py_name": "refer",
+          "py_type": "Refer",
+          "alias": "refer",
+          "alias_mode": "自动",
+          "doc": "Refer 是数据来源与许可信息。 上游在结果里带 refer 对象，展示这些数据时需要一并展示。"
+        }
+      ]
+    },
+    "v7/minutely.Minutely": {
+      "package": "v7/minutely",
+      "name": "Minutely",
+      "doc": "Minutely 是一条分钟级降水预报。",
+      "fields": [
+        {
+          "go_name": "FXTime",
+          "json_name": "fxTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "fx_time",
+          "py_type": "str",
+          "alias": "fxTime",
+          "alias_mode": "自动",
+          "doc": "FXTime 是预报时刻。"
+        },
+        {
+          "go_name": "Precip",
+          "json_name": "precip",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "precip",
+          "py_type": "str",
+          "alias": "precip",
+          "alias_mode": "自动",
+          "doc": "Precip 是降水量。 上游给的是固定两位小数的字符串。这里保持字符串：空串表示\"无此数据\"， 与 \"0.00\"（真的没下雨）不是一回事，转成数值会把两者压成同一个 0。"
+        },
+        {
+          "go_name": "Type",
+          "json_name": "type",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "type",
+          "py_type": "str",
+          "alias": "type",
+          "alias_mode": "自动",
+          "doc": "Type 是降水类型：\"rain\" / \"snow\"。"
+        }
+      ]
+    },
+    "v7/ocean.Result": {
+      "package": "v7/ocean",
+      "name": "Result",
+      "doc": "Result 是潮汐数据。",
+      "fields": [
+        {
+          "go_name": "Code",
+          "json_name": "code",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "code",
+          "py_type": "str",
+          "alias": "code",
+          "alias_mode": "自动",
+          "doc": "Code 是上游状态码，\"200\" 为成功。"
+        },
+        {
+          "go_name": "UpdateTime",
+          "json_name": "updateTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "update_time",
+          "py_type": "str",
+          "alias": "updateTime",
+          "alias_mode": "自动",
+          "doc": "UpdateTime 是数据更新时间。"
+        },
+        {
+          "go_name": "FXLink",
+          "json_name": "fxLink",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "fx_link",
+          "py_type": "str",
+          "alias": "fxLink",
+          "alias_mode": "自动",
+          "doc": "FXLink 是官网链接。"
+        },
+        {
+          "go_name": "TideTable",
+          "json_name": "tideTable",
+          "go_type": "[]Tide",
+          "optional": false,
+          "py_name": "tide_table",
+          "py_type": "list[Tide]",
+          "alias": "tideTable",
+          "alias_mode": "自动",
+          "doc": "TideTable 是潮汐表（高低潮）。"
+        },
+        {
+          "go_name": "TideHourly",
+          "json_name": "tideHourly",
+          "go_type": "[]TideHourly",
+          "optional": false,
+          "py_name": "tide_hourly",
+          "py_type": "list[TideHourly]",
+          "alias": "tideHourly",
+          "alias_mode": "自动",
+          "doc": "TideHourly 是逐小时潮位。"
+        },
+        {
+          "go_name": "Refer",
+          "json_name": "refer",
+          "go_type": "qwx.Refer",
+          "optional": false,
+          "py_name": "refer",
+          "py_type": "Refer",
+          "alias": "refer",
+          "alias_mode": "自动",
+          "doc": "Refer 是数据来源与许可信息。 上游在结果里带 refer 对象，展示这些数据时需要一并展示。"
+        }
+      ]
+    },
+    "v7/ocean.Tide": {
+      "package": "v7/ocean",
+      "name": "Tide",
+      "doc": "Tide 是一个潮汐时刻（高低潮）。",
+      "fields": [
+        {
+          "go_name": "FXTime",
+          "json_name": "fxTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "fx_time",
+          "py_type": "str",
+          "alias": "fxTime",
+          "alias_mode": "自动",
+          "doc": "FXTime 是潮汐时刻。"
+        },
+        {
+          "go_name": "Height",
+          "json_name": "height",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "height",
+          "py_type": "str",
+          "alias": "height",
+          "alias_mode": "自动",
+          "doc": "Height 是潮位高度（米）。 上游给的是字符串，这里保持字符串 —— 小数位数是上游的表达精度， 转成 float64 会丢掉它。"
+        },
+        {
+          "go_name": "Type",
+          "json_name": "type",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "type",
+          "py_type": "str",
+          "alias": "type",
+          "alias_mode": "自动",
+          "doc": "Type 是潮汐类型：\"H\"（高潮）/ \"L\"（低潮）。"
+        }
+      ]
+    },
+    "v7/ocean.TideHourly": {
+      "package": "v7/ocean",
+      "name": "TideHourly",
+      "doc": "TideHourly 是一个小时的潮位。",
+      "fields": [
+        {
+          "go_name": "FXTime",
+          "json_name": "fxTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "fx_time",
+          "py_type": "str",
+          "alias": "fxTime",
+          "alias_mode": "自动",
+          "doc": "FXTime 是时刻。"
+        },
+        {
+          "go_name": "Height",
+          "json_name": "height",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "height",
+          "py_type": "str",
+          "alias": "height",
+          "alias_mode": "自动",
+          "doc": "Height 是潮位高度（米）。"
+        }
+      ]
+    },
+    "v7/storm.ListResult": {
+      "package": "v7/storm",
+      "name": "ListResult",
+      "doc": "ListResult 是台风列表查询的结果。",
+      "fields": [
+        {
+          "go_name": "Code",
+          "json_name": "code",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "code",
+          "py_type": "str",
+          "alias": "code",
+          "alias_mode": "自动",
+          "doc": "Code 是上游状态码，\"200\" 为成功。"
+        },
+        {
+          "go_name": "UpdateTime",
+          "json_name": "updateTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "update_time",
+          "py_type": "str",
+          "alias": "updateTime",
+          "alias_mode": "自动",
+          "doc": "UpdateTime 是数据更新时间。"
+        },
+        {
+          "go_name": "FXLink",
+          "json_name": "fxLink",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "fx_link",
+          "py_type": "str",
+          "alias": "fxLink",
+          "alias_mode": "自动",
+          "doc": "FXLink 是官网链接。"
+        },
+        {
+          "go_name": "Storms",
+          "json_name": "storm",
+          "go_type": "[]StormSummary",
+          "optional": false,
+          "py_name": "storms",
+          "py_type": "list[StormSummary]",
+          "alias": "storm",
+          "alias_mode": "显式",
+          "doc": "Storms 是台风列表。 上游的 \"storm\" 是数组，不是对象。长度不固定：一个年份里可能有几十个 台风，也可能一个都没有。"
+        },
+        {
+          "go_name": "Refer",
+          "json_name": "refer",
+          "go_type": "qwx.Refer",
+          "optional": false,
+          "py_name": "refer",
+          "py_type": "Refer",
+          "alias": "refer",
+          "alias_mode": "自动",
+          "doc": "Refer 是数据来源与许可信息。 上游在结果里带 refer 对象，展示这些数据时需要一并展示。"
+        }
+      ]
+    },
+    "v7/storm.StormSummary": {
+      "package": "v7/storm",
+      "name": "StormSummary",
+      "doc": "StormSummary 是一个台风的概要。",
+      "fields": [
+        {
+          "go_name": "ID",
+          "json_name": "id",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "id",
+          "py_type": "str",
+          "alias": "id",
+          "alias_mode": "自动",
+          "doc": "ID 是台风 ID，如 \"NP2018\"。"
+        },
+        {
+          "go_name": "Name",
+          "json_name": "name",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "name",
+          "py_type": "str",
+          "alias": "name",
+          "alias_mode": "自动",
+          "doc": "Name 是台风名称，如 \"莫拉菲\"。"
+        },
+        {
+          "go_name": "Basin",
+          "json_name": "basin",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "basin",
+          "py_type": "str",
+          "alias": "basin",
+          "alias_mode": "自动",
+          "doc": "Basin 是台风所处流域，如 \"NP\"。"
+        },
+        {
+          "go_name": "Year",
+          "json_name": "year",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "year",
+          "py_type": "str",
+          "alias": "year",
+          "alias_mode": "自动",
+          "doc": "Year 是台风所处年份。上游给的是字符串，这里保持字符串。"
+        },
+        {
+          "go_name": "IsActive",
+          "json_name": "isActive",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "is_active",
+          "py_type": "str",
+          "alias": "isActive",
+          "alias_mode": "自动",
+          "doc": "IsActive 是活跃标记：\"1\" 活跃台风，\"0\" 停编。 上游给的是字符串，这里保持字符串，不转成 bool。"
+        }
+      ]
+    },
+    "v7/storm.ForecastResult": {
+      "package": "v7/storm",
+      "name": "ForecastResult",
+      "doc": "ForecastResult 是台风预报查询的结果。",
+      "fields": [
+        {
+          "go_name": "Code",
+          "json_name": "code",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "code",
+          "py_type": "str",
+          "alias": "code",
+          "alias_mode": "自动",
+          "doc": "Code 是上游状态码，\"200\" 为成功。"
+        },
+        {
+          "go_name": "UpdateTime",
+          "json_name": "updateTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "update_time",
+          "py_type": "str",
+          "alias": "updateTime",
+          "alias_mode": "自动",
+          "doc": "UpdateTime 是数据更新时间。"
+        },
+        {
+          "go_name": "FXLink",
+          "json_name": "fxLink",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "fx_link",
+          "py_type": "str",
+          "alias": "fxLink",
+          "alias_mode": "自动",
+          "doc": "FXLink 是官网链接。"
+        },
+        {
+          "go_name": "Forecast",
+          "json_name": "forecast",
+          "go_type": "[]Forecast",
+          "optional": false,
+          "py_name": "forecast",
+          "py_type": "list[Forecast]",
+          "alias": "forecast",
+          "alias_mode": "自动",
+          "doc": "Forecast 是台风预报数据列表。 台风已结束时上游返回空列表。"
+        },
+        {
+          "go_name": "Refer",
+          "json_name": "refer",
+          "go_type": "qwx.Refer",
+          "optional": false,
+          "py_name": "refer",
+          "py_type": "Refer",
+          "alias": "refer",
+          "alias_mode": "自动",
+          "doc": "Refer 是数据来源与许可信息。 上游在结果里带 refer 对象，展示这些数据时需要一并展示。"
+        }
+      ]
+    },
+    "v7/storm.TrackResult": {
+      "package": "v7/storm",
+      "name": "TrackResult",
+      "doc": "TrackResult 是台风实况和路径查询的结果。",
+      "fields": [
+        {
+          "go_name": "Code",
+          "json_name": "code",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "code",
+          "py_type": "str",
+          "alias": "code",
+          "alias_mode": "自动",
+          "doc": "Code 是上游状态码，\"200\" 为成功。"
+        },
+        {
+          "go_name": "UpdateTime",
+          "json_name": "updateTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "update_time",
+          "py_type": "str",
+          "alias": "updateTime",
+          "alias_mode": "自动",
+          "doc": "UpdateTime 是数据更新时间。"
+        },
+        {
+          "go_name": "FXLink",
+          "json_name": "fxLink",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "fx_link",
+          "py_type": "str",
+          "alias": "fxLink",
+          "alias_mode": "自动",
+          "doc": "FXLink 是官网链接。"
+        },
+        {
+          "go_name": "IsActive",
+          "json_name": "isActive",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "is_active",
+          "py_type": "str",
+          "alias": "isActive",
+          "alias_mode": "自动",
+          "doc": "IsActive 是活跃标记：\"1\" 活跃台风，\"0\" 停编。 上游给的是字符串，这里保持字符串，不转成 bool。"
+        },
+        {
+          "go_name": "Now",
+          "json_name": "now",
+          "go_type": "*TrackPoint",
+          "optional": true,
+          "py_name": "now",
+          "py_type": "TrackPoint",
+          "alias": "now",
+          "alias_mode": "自动",
+          "doc": "Now 是当前台风实况。 台风已结束时上游可能给 null，这时是 nil。"
+        },
+        {
+          "go_name": "Track",
+          "json_name": "track",
+          "go_type": "[]TrackPoint",
+          "optional": false,
+          "py_name": "track",
+          "py_type": "list[TrackPoint]",
+          "alias": "track",
+          "alias_mode": "自动",
+          "doc": "Track 是台风轨迹点列表。长度不固定。"
+        },
+        {
+          "go_name": "Refer",
+          "json_name": "refer",
+          "go_type": "qwx.Refer",
+          "optional": false,
+          "py_name": "refer",
+          "py_type": "Refer",
+          "alias": "refer",
+          "alias_mode": "自动",
+          "doc": "Refer 是数据来源与许可信息。 上游在结果里带 refer 对象，展示这些数据时需要一并展示。"
+        }
+      ]
+    },
+    "v7/storm.StormState": {
+      "package": "v7/storm",
+      "name": "StormState",
+      "doc": "StormState 是一个时刻的台风状态。 上游把台风属性平铺在预报元素与轨迹元素里，这两组字段完全一样，所以 收成一个类型内嵌进 [Forecast] 与 [TrackPoint] —— JSON 形状不变，字段 访问也不变。",
+      "fields": [
+        {
+          "go_name": "Lat",
+          "json_name": "lat",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "lat",
+          "py_type": "str",
+          "alias": "lat",
+          "alias_mode": "自动",
+          "doc": "Lat 是台风所处纬度。 上游把数值包成字符串，这里保持字符串 —— 小数位数是上游的表达精度， 转成 float64 会丢掉它。"
+        },
+        {
+          "go_name": "Lon",
+          "json_name": "lon",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "lon",
+          "py_type": "str",
+          "alias": "lon",
+          "alias_mode": "自动",
+          "doc": "Lon 是台风所处经度。上游给的是字符串，这里保持字符串。"
+        },
+        {
+          "go_name": "Type",
+          "json_name": "type",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "type",
+          "py_type": "str",
+          "alias": "type",
+          "alias_mode": "自动",
+          "doc": "Type 是台风类型，如 \"TS\"、\"TD\"、\"STS\"。"
+        },
+        {
+          "go_name": "Pressure",
+          "json_name": "pressure",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "pressure",
+          "py_type": "str",
+          "alias": "pressure",
+          "alias_mode": "自动",
+          "doc": "Pressure 是台风中心气压。上游给的是字符串，这里保持字符串。"
+        },
+        {
+          "go_name": "WindSpeed",
+          "json_name": "windSpeed",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "wind_speed",
+          "py_type": "str",
+          "alias": "windSpeed",
+          "alias_mode": "自动",
+          "doc": "WindSpeed 是台风附近最大风速。上游给的是字符串，这里保持字符串。"
+        },
+        {
+          "go_name": "MoveSpeed",
+          "json_name": "moveSpeed",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "move_speed",
+          "py_type": "str",
+          "alias": "moveSpeed",
+          "alias_mode": "自动",
+          "doc": "MoveSpeed 是台风移动速度。上游给的是字符串，这里保持字符串。"
+        },
+        {
+          "go_name": "MoveDir",
+          "json_name": "moveDir",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "move_dir",
+          "py_type": "str",
+          "alias": "moveDir",
+          "alias_mode": "自动",
+          "doc": "MoveDir 是台风移动方位，如 \"NE\"。"
+        },
+        {
+          "go_name": "Move360",
+          "json_name": "move360",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "move360",
+          "py_type": "str",
+          "alias": "move360",
+          "alias_mode": "自动",
+          "doc": "Move360 是台风移动方位 360 度方向。上游可能是空串。"
+        },
+        {
+          "go_name": "WindRadius30",
+          "json_name": "windRadius30",
+          "go_type": "*WindRadius",
+          "optional": true,
+          "py_name": "wind_radius30",
+          "py_type": "WindRadius",
+          "alias": "windRadius30",
+          "alias_mode": "自动",
+          "doc": "WindRadius30 是 7 级风圈半径。台风等级不够时上游不给，这时是 nil。"
+        },
+        {
+          "go_name": "WindRadius50",
+          "json_name": "windRadius50",
+          "go_type": "*WindRadius",
+          "optional": true,
+          "py_name": "wind_radius50",
+          "py_type": "WindRadius",
+          "alias": "windRadius50",
+          "alias_mode": "自动",
+          "doc": "WindRadius50 是 10 级风圈半径。台风等级不够时上游不给，这时是 nil。"
+        },
+        {
+          "go_name": "WindRadius64",
+          "json_name": "windRadius64",
+          "go_type": "*WindRadius",
+          "optional": true,
+          "py_name": "wind_radius64",
+          "py_type": "WindRadius",
+          "alias": "windRadius64",
+          "alias_mode": "自动",
+          "doc": "WindRadius64 是 12 级风圈半径。台风等级不够时上游不给，这时是 nil。"
+        }
+      ]
+    },
+    "v7/storm.Forecast": {
+      "package": "v7/storm",
+      "name": "Forecast",
+      "doc": "Forecast 是一个预报时刻的台风状态。 上游把台风属性平铺在预报元素里，这里按上游 JSON 一一对应，不做嵌套。",
+      "fields": [
+        {
+          "go_name": "FXTime",
+          "json_name": "fxTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "fx_time",
+          "py_type": "str",
+          "alias": "fxTime",
+          "alias_mode": "自动",
+          "doc": "FXTime 是预报时刻。"
+        },
+        {
+          "go_name": "",
+          "json_name": null,
+          "go_type": "StormState",
+          "optional": false,
+          "py_name": "",
+          "py_type": "需人工确认",
+          "alias": "",
+          "alias_mode": "未解析",
+          "doc": "StormState 是该时刻的台风状态。"
+        }
+      ]
+    },
+    "v7/storm.TrackPoint": {
+      "package": "v7/storm",
+      "name": "TrackPoint",
+      "doc": "TrackPoint 是一个轨迹点的台风状态。 上游把台风属性平铺在轨迹元素里，这里按上游 JSON 一一对应，不做嵌套。",
+      "fields": [
+        {
+          "go_name": "PubTime",
+          "json_name": "pubTime",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "pub_time",
+          "py_type": "str",
+          "alias": "pubTime",
+          "alias_mode": "自动",
+          "doc": "PubTime 是实况发布时间。只有 \"now\" 元素有这个字段。"
+        },
+        {
+          "go_name": "Time",
+          "json_name": "time",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "time",
+          "py_type": "str",
+          "alias": "time",
+          "alias_mode": "自动",
+          "doc": "Time 是轨迹点时刻。只有 \"track\" 数组元素有这个字段。"
+        },
+        {
+          "go_name": "",
+          "json_name": null,
+          "go_type": "StormState",
+          "optional": false,
+          "py_name": "",
+          "py_type": "需人工确认",
+          "alias": "",
+          "alias_mode": "未解析",
+          "doc": "StormState 是该时刻的台风状态。"
+        }
+      ]
+    },
+    "v7/storm.WindRadius": {
+      "package": "v7/storm",
+      "name": "WindRadius",
+      "doc": "WindRadius 是一个风圈的四个方向半径。",
+      "fields": [
+        {
+          "go_name": "NERadius",
+          "json_name": "neRadius",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "ne_radius",
+          "py_type": "str",
+          "alias": "neRadius",
+          "alias_mode": "自动",
+          "doc": "NERadius 是东北半径。上游可能是空串。"
+        },
+        {
+          "go_name": "SERadius",
+          "json_name": "seRadius",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "se_radius",
+          "py_type": "str",
+          "alias": "seRadius",
+          "alias_mode": "自动",
+          "doc": "SERadius 是东南半径。上游可能是空串。"
+        },
+        {
+          "go_name": "SWRadius",
+          "json_name": "swRadius",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "sw_radius",
+          "py_type": "str",
+          "alias": "swRadius",
+          "alias_mode": "自动",
+          "doc": "SWRadius 是西南半径。上游可能是空串。"
+        },
+        {
+          "go_name": "NWRadius",
+          "json_name": "nwRadius",
+          "go_type": "string",
+          "optional": false,
+          "py_name": "nw_radius",
+          "py_type": "str",
+          "alias": "nwRadius",
+          "alias_mode": "自动",
+          "doc": "NWRadius 是西北半径。上游可能是空串。"
+        }
+      ]
+    }
+  }
+}
