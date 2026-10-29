@@ -307,6 +307,31 @@ P2 已完成。新一代四个端点族全部落地：
 验收：ruff format/check、mypy strict、pytest（272 个用例）全绿；
 `check_field_map.py` 43 个模型与 Go 契约一致。
 
+## 6.8 P3 交付状态
+
+P3 已完成。GeoAPI 与控制台两个端点族落地：
+
+| 族 | 端点 | 包 | 端点常量 |
+| --- | --- | --- | --- |
+| geo | lookup_city / lookup_poi / poi_range / top_cities | `src/qwx/geo/` | `EndpointCity`、`EndpointPOI`、`EndpointPOIRange`、`EndpointTopCities` |
+| console | finance / stats | `src/qwx/console/` | `EndpointFinance`、`EndpointStats` |
+
+实现要点：
+
+- geo 是唯一认地名的接口族：位置形态用 `loc.query()`（经度在前），坐标对 /
+  LocationID / 地名三种都收；`poi_range` 必须带坐标。
+- POI 类型是闭集，用 `POIType(str, Enum)`：`scenic` / `CSTA` / `TSTA`，
+  闭集外抛 `InvalidParameterError`。
+- 显式 alias 4 处（geo 部分）：`CityResult.locations` → `location`、
+  `POIResult.pois` → `poi`、`RangeResult.pois` → `poi`、
+  `TopCityResult.cities` → `topCityList`。
+- console 的 `project` 与 `credential` 互斥，客户端挡下，不打上游。
+- `ResourcePlan.requests` 上游可能给字符串或数字，Python 用 `int | float | str`
+  收两种形态（Go 用 `json.Number`）。
+
+验收：ruff format/check、mypy strict、pytest（335 个用例）全绿；
+缓存键与 Go 的 golden 断言逐字一致（独立复核过 geo 8 条、console 4 条）。
+
 ## 7. 分阶段实施
 
 每阶段独立可验收，验收不过不进入下一阶段。
@@ -323,7 +348,7 @@ P2 已完成。新一代四个端点族全部落地：
 工作量估计：源码约 4500 行、测试约 3500 行。P0–P1 约 2 天，P2 约 3 天，
 P3 约 1 天，P4 约 3 天，P5 约 2 天。
 
-进度：P0、P1、P2 已完成（见 §6.5、§6.6、§6.7），下一步是 P3 GeoAPI 与控制台。
+进度：P0、P1、P2、P3 已完成（见 §6.5~§6.8），下一步是 P4 旧一代 v7 六个族。
 
 ---
 
