@@ -196,7 +196,6 @@ openssl pkey -pubout -in ed25519-private.pem > ed25519-public.pem
 
 
 ```python
-
 auth = qwx.JWTAuth(
     private_key_pem=pem,
     key_id="你的 Key ID",
@@ -462,10 +461,12 @@ client = qwx.Client(
     auth,
     "abcxyz.qweatherapi.com",
     cache=cache,
-    ttl_policy=qwx.TTLMap({
-        EndpointCurrent: timedelta(minutes=5),
-        AQCurrent: timedelta(0),  # 该端点不缓存
-    }),
+    ttl_policy=qwx.TTLMap(
+        {
+            EndpointCurrent: timedelta(minutes=5),
+            AQCurrent: timedelta(0),  # 该端点不缓存
+        }
+    ),
 )
 ```
 
@@ -475,9 +476,7 @@ client = qwx.Client(
 
 ```python
 policy = qwx.TTLPolicyFunc(
-    lambda endpoint, default: timedelta(seconds=10)
-    if endpoint == EndpointCurrent
-    else default
+    lambda endpoint, default: timedelta(seconds=10) if endpoint == EndpointCurrent else default
 )
 ```
 

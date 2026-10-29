@@ -198,7 +198,6 @@ How the token is signed, implemented in `src/qwx/auth.py`:
 
 
 ```python
-
 auth = qwx.JWTAuth(
     private_key_pem=pem,
     key_id="your Key ID",
@@ -465,10 +464,12 @@ client = qwx.Client(
     auth,
     "abcxyz.qweatherapi.com",
     cache=cache,
-    ttl_policy=qwx.TTLMap({
-        EndpointCurrent: timedelta(minutes=5),
-        AQCurrent: timedelta(0),  # this endpoint is not cached
-    }),
+    ttl_policy=qwx.TTLMap(
+        {
+            EndpointCurrent: timedelta(minutes=5),
+            AQCurrent: timedelta(0),  # this endpoint is not cached
+        }
+    ),
 )
 ```
 
@@ -478,9 +479,7 @@ Use `qwx.TTLPolicyFunc` when the duration has to follow the time of day or the l
 
 ```python
 policy = qwx.TTLPolicyFunc(
-    lambda endpoint, default: timedelta(seconds=10)
-    if endpoint == EndpointCurrent
-    else default
+    lambda endpoint, default: timedelta(seconds=10) if endpoint == EndpointCurrent else default
 )
 ```
 
