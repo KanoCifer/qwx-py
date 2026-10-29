@@ -332,6 +332,74 @@ P3 已完成。GeoAPI 与控制台两个端点族落地：
 验收：ruff format/check、mypy strict、pytest（335 个用例）全绿；
 缓存键与 Go 的 golden 断言逐字一致（独立复核过 geo 8 条、console 4 条）。
 
+## 6.9 P4 交付状态
+
+P4 已完成。旧一代 v7 六个端点族落地，13 个端点方法：
+
+| 族 | 端点 | 包 | 端点常量 |
+| --- | --- | --- | --- |
+| astronomy | sun / moon / solar_elevation_angle | `src/qwx/v7/astronomy/` | `EndpointSun`、`EndpointMoon`、`EndpointAngle` |
+| historical | weather | `src/qwx/v7/historical/` | `Endpoint` |
+| indices | indices / indices_multi | `src/qwx/v7/indices/` | `Endpoint` |
+| minutely | minutely | `src/qwx/v7/minutely/` | `Endpoint` |
+| ocean | tide | `src/qwx/v7/ocean/` | `Endpoint` |
+| storm | list / forecast / track | `src/qwx/v7/storm/` | `EndpointList`、`EndpointForecast`、`EndpointTrack` |
+
+两代分治在代码里是实打实分开的：
+
+- 位置形态：v7 走 `loc.query()`（经度在前），按端点还认 LocationID 与站点 ID；
+  新一代走 `loc.path()`（纬度在前），只认坐标。
+- 字段形态：v7 的数值与单位拼在一个字符串里，保持 `str` 不转 float；新一代拆成
+  `value` + `unit`。
+- 缓存键前缀各按代：`qwx:astronomy:`、`qwx:historical:`、`qwx:indices:`、
+  `qwx:minutely:`、`qwx:tide:`、`qwx:storm:`。
+- 显式 alias 3 处（v7 部分）：`historical.Result.daily` → `weatherDaily`、
+  `historical.Result.hourly` → `weatherHourly`、`storm.ListResult.storms` → `storm`。
+
+口径修正一处：潮汐的日期校验回到 Go 版口径 —— 只校验 8 位数字，日历合法性
+交给上游判（Go 的 `v7/ocean.validateDate` 不查日历，`v7/astronomy` 才查）。
+
+契约对照工具补上 Go 内嵌 struct 的字段平铺比对（`tools/check_field_map.py`），
+可校验的模型从 70 个增加到 77 个。
+
+验收：ruff format/check、mypy strict、pytest 全绿；缓存键与 Go 的 golden 断言
+逐字一致（独立复核过 v7 九条、v1 十四条、geo/console 十二条）。
+
+## 6.10 P5 交付状态
+
+P5 已完成，迁移收口。
+
+| 产物 | 位置 |
+| --- | --- |
+| 端点表（生成物 + 漂移检查） | `tools/gen_endpoints.py`、`docs/endpoints.md`、`tests/test_endpoints_doc.py` |
+| 文档八篇 | `docs/`：endpoints、contract、gotchas、errors、caching、logging、auth、verification |
+| 可运行示例 | `examples/`：basic_sync、basic_async、jwt_auth、cache_redis |
+| 联网冒烟 | `live/live_test.py`（`pytest -m live`，缺凭据整模块 skip） |
+| Redis 适配 | `src/qwx/redis_cache.py`（可选 extra `qwx[redis]`，延迟导入 redis-py） |
+| CI 与发布 | `.github/workflows/ci.yml`、`.github/workflows/release.yml` |
+| 双语 README | `README.md`、`README_EN.md` |
+
+三道漂移防线全部落地：
+
+1. 缓存键 golden 测试（`tests/test_cachekey.py` 与各端点族的客户端测试）。
+2. Go json tag ↔ Python alias 对照（`tools/check_field_map.py`，77 个模型），
+   并补上 Go 内嵌 struct 的字段平铺比对。
+3. 端点表生成与交叉校验（`tools/gen_endpoints.py`）：契约 26 个端点，
+   与 Python 源码里的端点常量值、默认 TTL 双向比对。
+
+最终验收：
+
+```bash
+ruff format --check .   # 104 files already formatted
+ruff check .            # All checks passed!
+mypy                    # Success: no issues found in 56 source files
+pytest tests/ -q        # 508 passed
+pytest live -q          # 4 skipped（无凭据）
+tools/check_field_map.py        # 77 个模型与 Go 契约一致
+tools/gen_endpoints.py --check  # 端点 26 个
+tools/extract_go_contract.py --check  # 无漂移
+```
+
 ## 7. 分阶段实施
 
 每阶段独立可验收，验收不过不进入下一阶段。
@@ -348,7 +416,7 @@ P3 已完成。GeoAPI 与控制台两个端点族落地：
 工作量估计：源码约 4500 行、测试约 3500 行。P0–P1 约 2 天，P2 约 3 天，
 P3 约 1 天，P4 约 3 天，P5 约 2 天。
 
-进度：P0、P1、P2、P3 已完成（见 §6.5~§6.8），下一步是 P4 旧一代 v7 六个族。
+进度：P0~P5 全部完成（见 §6.5~§6.10），迁移结束。下一步是打 tag 发布 PyPI。
 
 ---
 
@@ -377,10 +445,10 @@ Python 侧额外维护一份端点注册表（每个端点的路径、位置形�
 | `to_camel` 与上游键不匹配 | 解析不到字段 | 逐族核对，不规则键显式 `Field(alias=...)` |
 | 缓存键与 Go 版不一致 | 共享 Redis 时互相覆盖 | golden 测试 |
 | 同步/异步行为分叉 | 异步路径出线上问题 | 端点层单实现，只核心层双份 |
-| 上游怪癖漏移植 | 用户踩 Go 版已修的坑 | `docs/gotchas.md` 46 条逐条落到 docstring 与测试 |
+| 上游怪癖漏移植 | 用户踩 Go 版已修的坑 | `docs/gotchas.md` 39 条逐条落到 docstring 与测试 |
 | pydantic 校验太严 | 合法响应被判非法 | `extra="allow"`、可选字段宽松、时间不解析 |
 
-`docs/gotchas.md` 的 46 条是迁移清单的直接来源，逐条核对：
+`docs/gotchas.md` 的 39 条是迁移清单的直接来源，逐条核对：
 新一代经纬倒置、默认 UTC、湿度比例、逐日无 intensity、潮汐当地日期、
 POI 无数据回 400、生活指数只支持 1d/3d、分钟级降水只覆盖中国、
 太阳辐射无 lang 参数且上限 72、台风 basin 只支持 NP、

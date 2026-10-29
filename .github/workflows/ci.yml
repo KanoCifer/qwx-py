@@ -1,0 +1,54 @@
+name: CI
+
+# push 与 PR 都跑：格式、静态检查、类型检查、单测、契约对照。
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # pyproject.toml 里 requires-python = ">=3.10"
+        python: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,redis]"
+
+      - name: Check formatting
+        run: ruff format --check .
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Type check
+        run: mypy
+
+      - name: Test
+        run: python -m pytest tests/ -q
+
+      - name: Contract field map
+        # 对照 contract/types.json（Go 侧抽取的契约基线）与 Python 模型的别名集合。
+        # 只读仓库内的契约基线，不依赖 Go 仓库。
+        run: python tools/check_field_map.py

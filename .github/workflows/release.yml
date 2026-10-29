@@ -1,0 +1,108 @@
+name: Release
+
+# 打 vX.Y.Z 标签即发布到 PyPI。
+#
+# 需要的仓库设置（PyPI trusted publishing）：
+# 1. 在 PyPI 上给本项目添加一个 pending publisher：
+#    - 仓库：KanoCifer/qwx-py
+#    - 工作流：release.yml
+#    - 环境名：pypi
+# 2. 在 GitHub 仓库的 Settings → Environments 里建一个名为 pypi 的环境。
+# 3. 版本号：先改 pyproject.toml 里的 version，再打同名标签；本工作流会校验
+#    标签与 pyproject.toml 的版本一致，不一致直接失败。
+#
+# 不想用 trusted publishing 时，把 publish 步骤换成 token 方式：
+#    - 仓库 Settings → Secrets 里加一个 PYPI_API_TOKEN（PyPI → Account settings
+#      → API tokens 创建，权限限定到本项目）；
+#    - publish 步骤改成：
+#        run: |
+#          python -m pip install twine
+#          python -m twine upload dist/*
+#      并把 permissions 里的 id-token: write 去掉。
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Check tag and version
+        id: check
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          tag="$TAG"
+          if ! [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.][a-z0-9]+)?$ ]]; then
+            echo "::error::标签 $tag 不是语义化版本（vMAJOR.MINOR.PATCH）"
+            exit 1
+          fi
+          version="${tag#v}"
+          declared=$(python -c "import tomllib,pathlib;print(tomllib.loads(pathlib.Path('pyproject.toml').read_text(encoding='utf-8'))['project']['version'])")
+          if [ "$declared" != "$version" ]; then
+            echo "::error::pyproject.toml 的版本是 $declared，与标签 $tag 不一致，先改版本再打标签"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,redis]" build
+
+      - name: Test
+        run: python -m pytest tests/ -q
+
+      - name: Build distributions
+        run: python -m build
+
+      - name: Check distributions
+        run: |
+          python -m pip install twine
+          python -m twine check dist/*
+
+      - name: Upload distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    name: Publish to PyPI
+    needs: [build]
+    runs-on: ubuntu-latest
+    # trusted publishing 用 OIDC 换短期令牌，不需要在仓库里存 API token。
+    permissions:
+      id-token: write
+    environment:
+      name: pypi
+      url: https://pypi.org/p/qwx
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@release/v1

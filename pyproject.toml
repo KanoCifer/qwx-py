@@ -6,13 +6,28 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "KanoCifer" }]
-keywords = ["qweather", "weather", "forecast", "sdk"]
+keywords = [
+    "qweather",
+    "weather",
+    "forecast",
+    "sdk",
+    "air-quality",
+    "warning",
+    "tide",
+    "geo",
+    "jwt",
+]
 classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
 dependencies = [
@@ -28,6 +43,9 @@ dev = ["pytest>=8", "ruff>=0.5", "mypy>=1.10"]
 [project.urls]
 Homepage = "https://github.com/KanoCifer/qwx-py"
 Source = "https://github.com/KanoCifer/qwx-py"
+Documentation = "https://github.com/KanoCifer/qwx-py/tree/main/docs"
+Issues = "https://github.com/KanoCifer/qwx-py/issues"
+Changelog = "https://github.com/KanoCifer/qwx-py/releases"
 
 [build-system]
 requires = ["hatchling"]
