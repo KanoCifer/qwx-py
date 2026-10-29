@@ -1,6 +1,6 @@
 [project]
 name = "qwx"
-version = "0.1.0.dev0"
+version = "0.1.0"
 description = "和风天气（QWeather）开发服务的 Python 客户端"
 readme = "README.md"
 requires-python = ">=3.10"
