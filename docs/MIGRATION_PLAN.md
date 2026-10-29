@@ -428,6 +428,23 @@ skip 标记。
 顺手修掉一处文档与代码不一致：`docs/verification.md` 里写的是
 `QWX_JWT_DEVELOPER_ID`，代码读的是 `QWX_DEVELOPER_ID`，已统一。
 
+## 6.12 README 美化
+
+双语 README 重写，配图与徽章：
+
+- `assets/`：手绘徽标源图 `qwx.png` 与确定性生成脚本 `build_assets.py`
+  （SVG 排版 → rsvg-convert 渲染），产出 `banner.png`、`banner_en.png`、
+  `logo.png`。Go 版同款视觉，源图共用同一份手绘稿。
+- 徽章行：CI、PyPI、Python 版本、License、端点数、pydantic v2、Go 版参考。
+- 目录用 `<details>` 折叠，16 条目录项全部指向**显式 HTML 锚点**
+  （`<a id="features"></a>` 那种），不依赖 GitHub 对 emoji 标题的 slug 规则 ——
+  两版 README 用同一套锚点 ID，跨语言跳转也对得上。
+- 新增三节此前缺失的内容：客户端选项、并发与超时、测试。
+- 两版的端点表逐字节相同（26 行），模块结构表一致。
+
+README 里的 Python 代码块纳入 ruff 检查：`ruff format` 会格式化 Markdown 里的
+代码块，示例因此与源码风格保持一致。
+
 ## 7. 分阶段实施
 
 每阶段独立可验收，验收不过不进入下一阶段。
