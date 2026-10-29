@@ -445,6 +445,33 @@ skip 标记。
 README 里的 Python 代码块纳入 ruff 检查：`ruff format` 会格式化 Markdown 里的
 代码块，示例因此与源码风格保持一致。
 
+## 6.13 发布准备
+
+发布链路与 sdist 瘦身，发布前实测过：
+
+| 检查项 | 结果 |
+| --- | --- |
+| `python -m build` | 产出 `qwx-0.1.0-py3-none-any.whl`（100 KB）与 `qwx-0.1.0.tar.gz`（181 KB） |
+| `twine check` | 两个包 PASSED |
+| 干净环境装 wheel | `import qwx` 正常，`py.typed` 在内 |
+| 干净环境装 sdist | 能构建能安装，版本 0.1.0 |
+| sdist 自带测试 | 解包后跑 `pytest tests/`：509 passed / 1 skipped（旁边没有 Go 仓库，漂移检查按设计跳过） |
+| PyPI 包名 | `qwx` 与 `qwx-py` 均未被注册 |
+| GitHub 环境 | 仓库 `KanoCifer/qwx-py` 为公开、默认分支 main、`ci.yml` 与 `release.yml` 均在 main 上、GitHub 环境 `pypi` 已存在 |
+| PyPI pending publisher | 项目名 qwx、仓库 KanoCifer/qwx-py、Workflow release.yml、Environment pypi —— 与工作流一致 |
+
+sdist 瘦身（712 KB → 181 KB）：
+
+- 去掉 `assets/`（README 素材图，约 500 KB；横幅改用 raw.githubusercontent 绝对地址，
+  PyPI 页面因此也能显示）、`.github/`、迁移过程文档（MIGRATION_PLAN 与 P2~P5 规约）、
+  与 contract/ JSON 重复的人读版（contract_baseline.md、field_map.md）。
+- 保留 `src/`、`tests/`、`tools/`、`examples/`、`live/`、面向使用者的 `docs/`、
+  `contract/`（tools 与 tests 的契约对照依赖它），sdist 解包即可跑测试。
+
+版本号漂移修掉一处：`qwx.__version__` 原先在源码里另写一份，与
+`pyproject.toml` 的版本可能不一致（发版时就会变成 0.1.0 与 0.1.0.dev0）。
+改成从安装元数据取，并加了 `tests/test_version.py` 守着。
+
 ## 7. 分阶段实施
 
 每阶段独立可验收，验收不过不进入下一阶段。

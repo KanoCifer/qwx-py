@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/banner_en.png" width="100%" alt="qwx" />
+  <img src="https://raw.githubusercontent.com/KanoCifer/qwx-py/main/assets/banner_en.png" width="100%" alt="qwx" />
 </p>
 
 <p align="center">

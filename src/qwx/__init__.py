@@ -16,6 +16,9 @@ Python 版与 Go 版（https://github.com/KanoCifer/qwx）语义对等：端点�
 
 from __future__ import annotations
 
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as metadata_version
+
 from qwx._models import QwxModel
 from qwx.auth import APIKeyAuth, Auth, JWTAuth
 from qwx.cache import Cache, MemoryCache
@@ -40,7 +43,11 @@ from qwx.request import AsyncDoer, Doer, Request
 from qwx.timeutil import parse_qtime
 from qwx.ttl import Endpoint, TTLMap, TTLPolicy, TTLPolicyFunc, current_ttl_override, override_ttl
 
-__version__ = "0.1.0.dev0"
+# 版本号从安装元数据取，源里不再另写一份 —— 少一个会漂移的地方。
+try:
+    __version__ = metadata_version("qwx")
+except PackageNotFoundError:  # 源码树里直接跑，没有安装元数据
+    __version__ = "0.0.0.dev0"
 
 __all__ = [
     "LANGS",
