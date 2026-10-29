@@ -400,6 +400,34 @@ tools/gen_endpoints.py --check  # 端点 26 个
 tools/extract_go_contract.py --check  # 无漂移
 ```
 
+## 6.11 P5 补充：联网冒烟覆盖补齐
+
+首版 live 套件只覆盖 4 个端点。补齐后按族拆成四个文件，共 23 个用例：
+
+| 文件 | 覆盖 | 用例数 |
+| --- | --- | --- |
+| `live/test_live_v1.py` | 天气 current/hourly/daily、空气质量 current/station、预警、太阳辐射 forecast，外加 hours 上限探测 | 8 |
+| `live/test_live_v7.py` | 天文三端点、历史天气、生活指数、分钟级降水、台风、潮汐 | 7 |
+| `live/test_live_geo.py` | 城市检索（LocationID 与地名两种）、POI 检索、POI 范围、城市榜 | 5 |
+| `live/test_live_console.py` | 财务汇总、请求量统计（按项目与按凭据过滤各一） | 4 |
+
+共用装置抽到 `live/conftest.py`：读环境变量、造模块级客户端、缺凭据时的
+skip 标记。
+
+上游怪癖在冒烟里被显式处理，而不是靠运气：
+
+- 控制台权限未开通上游回 403 → skip，不是失败（与 Go 版 `t.Skip` 同口径）。
+- 潮汐用**站点当地日期**（Asia/Shanghai），窗口未开放时上游回 400 → skip。
+- 历史天气用昨天（上游只给最近 10 天且不含今天）。
+- 台风列表可能为空，只断言「不是 None」。
+- GeoAPI 的 POI 附近无数据时上游回 400 → skip。
+- 太阳辐射 hours 上限：绕开 SDK 校验直接打上游，72 与 73 各试一次；与官方
+  口径不符时发警告而不是让用例失败（文档页写 72、OpenAPI schema 写 60，
+  这条分歧本身是已知的）。
+
+顺手修掉一处文档与代码不一致：`docs/verification.md` 里写的是
+`QWX_JWT_DEVELOPER_ID`，代码读的是 `QWX_DEVELOPER_ID`，已统一。
+
 ## 7. 分阶段实施
 
 每阶段独立可验收，验收不过不进入下一阶段。

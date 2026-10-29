@@ -45,7 +45,15 @@ uv run pytest -q
 
 ## 联网冒烟
 
-`live/live_test.py` 带 `live` 标记，默认不参与 `pytest tests/`（测试路径只含 `tests/`）。需要真实凭据，缺任一项即 skip，不会让 CI 因缺凭据失败。
+`live/` 下的四个文件带 `live` 标记，默认不参与 `pytest tests/`（测试路径只含 `tests/`）。需要真实凭据，缺任一项即 skip，不会让 CI 因缺凭据失败。
+
+| 文件 | 覆盖 |
+| --- | --- |
+| `live/conftest.py` | 共用装置：读环境变量、造客户端、缺凭据时的 skip 标记 |
+| `live/test_live_v1.py` | 新一代：天气、空气质量、预警、太阳辐射 |
+| `live/test_live_v7.py` | 旧一代：天文、历史天气、生活指数、分钟级降水、台风、潮汐 |
+| `live/test_live_geo.py` | GeoAPI：城市检索、POI 检索、POI 范围、城市榜 |
+| `live/test_live_console.py` | 控制台：财务汇总、请求量统计 |
 
 ```bash
 QWX_API_HOST=your-host.qweatherapi.com \
@@ -60,7 +68,7 @@ QWX_API_HOST=your-host.qweatherapi.com \
 QWX_JWT_PRIVATE_KEY="$(cat ed25519-private.pem)" \
 QWX_KEY_ID=YOUR_KEY_ID \
 QWX_PROJECT_ID=YOUR_PROJECT_ID \
-QWX_JWT_DEVELOPER_ID=YOUR_DEVELOPER_ID \
+QWX_DEVELOPER_ID=YOUR_DEVELOPER_ID \
 .venv/bin/python -m pytest live/ -q -m live
 ```
 
@@ -73,7 +81,7 @@ QWX_JWT_DEVELOPER_ID=YOUR_DEVELOPER_ID \
 | `QWX_JWT_PRIVATE_KEY` | Ed25519 私钥 PEM 内容 |
 | `QWX_KEY_ID` | Key ID |
 | `QWX_PROJECT_ID` | Project ID |
-| `QWX_JWT_DEVELOPER_ID` | Developer ID |
+| `QWX_DEVELOPER_ID` | Developer ID |
 
 JWT 凭据齐全就走 JWT，缺了就退到 API KEY。两种都没配齐时整个模块 skip。
 
