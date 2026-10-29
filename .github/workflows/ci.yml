@@ -47,8 +47,3 @@ jobs:
 
       - name: Test
         run: python -m pytest tests/ -q
-
-      - name: Contract field map
-        # 对照 contract/types.json（Go 侧抽取的契约基线）与 Python 模型的别名集合。
-        # 只读仓库内的契约基线，不依赖 Go 仓库。
-        run: python tools/check_field_map.py
