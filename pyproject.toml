@@ -43,7 +43,7 @@ dev = ["pytest>=8", "ruff>=0.5", "mypy>=1.10"]
 [project.urls]
 Homepage = "https://github.com/KanoCifer/qwx-py"
 Source = "https://github.com/KanoCifer/qwx-py"
-Documentation = "https://github.com/KanoCifer/qwx-py/tree/main/docs"
+Documentation = "https://github.com/KanoCifer/qwx-py#readme"
 Issues = "https://github.com/KanoCifer/qwx-py/issues"
 Changelog = "https://github.com/KanoCifer/qwx-py/releases"
 
@@ -55,38 +55,21 @@ build-backend = "hatchling.build"
 packages = ["src/qwx"]
 
 [tool.hatch.build.targets.sdist]
-# sdist 装的是「给人看源码、顺带能跑测试」的包：带源码、测试、工具、示例与面向
-# 使用者的文档；不带 CI 配置、README 素材图与迁移过程文档。
-# contract/ 要留 —— tools/ 与 tests/ 的契约对照依赖它。
 include = [
   "/src",
   "/tests",
   "/tools",
   "/examples",
   "/live",
-  "/docs",
-  "/contract",
   "/README.md",
   "/README_EN.md",
   "/LICENSE",
-]
-exclude = [
-  # 迁移过程文档：只对仓库维护者有意义。
-  "/docs/MIGRATION_PLAN.md",
-  "/docs/P2_SPEC.md",
-  "/docs/P3_SPEC.md",
-  "/docs/P4_SPEC.md",
-  "/docs/P5_SPEC.md",
-  # Go 侧抽取基线的人读版：与 contract/ 的 JSON 重复。
-  "/docs/contract_baseline.md",
-  "/docs/field_map.md",
 ]
 
 [tool.ruff]
 line-length = 100
 target-version = "py310"
 src = ["src", "tests", "tools"]
-# docs/ 里是规约文档，代码块是给人看的示例，不参与格式化。
 extend-exclude = ["docs"]
 
 [tool.ruff.lint]
