@@ -62,6 +62,7 @@ class Lang:
     HE: ClassVar[Lang]
     IS: ClassVar[Lang]
     NB: ClassVar[Lang]
+    UNSPECIFIED: ClassVar[Lang]
 
     def __str__(self) -> str:
         """返回 API 语言代码。"""
@@ -114,6 +115,8 @@ Lang.FI = Lang("芬兰语", "fi")
 Lang.HE = Lang("希伯来语", "he")
 Lang.IS = Lang("冰岛语", "is")
 Lang.NB = Lang("挪威语", "nb")
+
+Lang.UNSPECIFIED = Lang("", "")
 
 LANGS: tuple[Lang, ...] = (
     Lang.ZH,

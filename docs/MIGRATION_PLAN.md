@@ -278,6 +278,35 @@ P1 已完成。核心层产出：
 验收：ruff format/check、mypy strict、pytest（155 个用例）全绿；契约抽取器
 `--check` 无漂移；`check_field_map.py` 已核对 `Refer` 与 `MetaData` 两个模型。
 
+## 6.7 P2 交付状态
+
+P2 已完成。新一代四个端点族全部落地：
+
+| 族 | 端点 | 包 | 端点常量 |
+| --- | --- | --- | --- |
+| weather | current / hourly / daily | `src/qwx/v1/weather/` | `EndpointCurrent`、`EndpointHourly`、`EndpointDaily` |
+| airquality | current / daily / hourly / station | `src/qwx/v1/airquality/` | `EndpointCurrent`、`EndpointDaily`、`EndpointHourly`、`EndpointStation` |
+| alert | current | `src/qwx/v1/alert/` | `Endpoint` |
+| solarradiation | forecast | `src/qwx/v1/solarradiation/` | `Endpoint` |
+
+实现要点：
+
+- 端点方法只写一份：`_XxxCalls` mixin 算请求，`XxxService`（同步）与
+  `AsyncXxxService`（异步）各带一层带类型的薄包装。
+- 缓存键、端点常量、TTL、查询参数与 Go 版逐字一致，且有 golden 测试守着。
+- 校验先于请求：越界抛 `InvalidParameterError`，位置不合法抛
+  `InvalidLocationError`，都不打上游。
+- 模型字段别名全部由 `to_camel` 自动生成（显式 alias 仍是 0 处：7 处显式
+  alias 全在 geo 与 v7）。Go 指针字段映射为 `X | None = None`。
+- 唯一特殊命名：`POA.global` 的 Python 字段写作 `global_`（`global` 是关键字），
+  别名仍是上游的 `global`。
+
+`EndpointStation` 的值是 `airquality/v1/stations`（复数），与上游路径形态不一致
+是有意的：端点标识是已发布事实，TTLPolicy 按值匹配。
+
+验收：ruff format/check、mypy strict、pytest（272 个用例）全绿；
+`check_field_map.py` 43 个模型与 Go 契约一致。
+
 ## 7. 分阶段实施
 
 每阶段独立可验收，验收不过不进入下一阶段。
@@ -294,7 +323,7 @@ P1 已完成。核心层产出：
 工作量估计：源码约 4500 行、测试约 3500 行。P0–P1 约 2 天，P2 约 3 天，
 P3 约 1 天，P4 约 3 天，P5 约 2 天。
 
-进度：P0、P1 已完成（见 §6.5、§6.6），下一步是 P2 新一代端点族。
+进度：P0、P1、P2 已完成（见 §6.5、§6.6、§6.7），下一步是 P3 GeoAPI 与控制台。
 
 ---
 

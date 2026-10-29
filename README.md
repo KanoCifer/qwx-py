@@ -7,13 +7,13 @@ Python 版与 Go 版（[KanoCifer/qwx](https://github.com/KanoCifer/qwx)）语�
 
 ## 当前状态
 
-迁移进行中。**P0 与 P1 阶段已完成**：契约基线与核心层就绪，端点族实现尚未开始。
+迁移进行中。**P0、P1、P2 阶段已完成**：契约基线、核心层与新一代 v1 端点族就绪。
 
 | 阶段 | 内容 | 状态 |
 | --- | --- | --- |
 | P0 | 项目骨架与契约基线 | 完成 |
 | P1 | 核心层（client / auth / cache / ttl / errors） | 完成 |
-| P2 | 新一代 v1 端点 | 未开始 |
+| P2 | 新一代 v1 端点 | 完成 |
 | P3 | GeoAPI 与控制台 | 未开始 |
 | P4 | 旧一代 v7 端点 | 未开始 |
 | P5 | 文档、示例、发布 | 未开始 |
@@ -103,6 +103,7 @@ except UpstreamError as exc:
 | 错误层级 | [src/qwx/errors.py](src/qwx/errors.py) | 两代错误体都解析，按状态码归类 |
 | 缓存与 TTL | [src/qwx/cache.py](src/qwx/cache.py)、[src/qwx/ttl.py](src/qwx/ttl.py) | Cache 协议、内存实现、TTL 策略与单次覆盖 |
 | 位置与语言 | [src/qwx/location.py](src/qwx/location.py)、[src/qwx/lang.py](src/qwx/lang.py) | 两代位置形态、31 种语言 |
+| 新一代端点族 | [src/qwx/v1/](src/qwx/v1/) | 天气、空气质量、预警、太阳辐射四个族，共 9 个端点 |
 
 ## 契约基线怎么用
 

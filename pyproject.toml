@@ -40,6 +40,8 @@ packages = ["src/qwx"]
 line-length = 100
 target-version = "py310"
 src = ["src", "tests", "tools"]
+# docs/ 里是规约文档，代码块是给人看的示例，不参与格式化。
+extend-exclude = ["docs"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "N"]

@@ -5,12 +5,12 @@ Python 版与 Go 版（https://github.com/KanoCifer/qwx）语义对等：端点�
 
 最小用法：
 
-    import httpx
     import qwx
+    from qwx.v1.weather import WeatherService
 
     auth = qwx.APIKeyAuth("你的 API KEY")
     with qwx.Client(auth, "abcxyz.qweatherapi.com") as client:
-        weather = qwx.v1.weather.WeatherService(client)
+        weather = WeatherService(client)
         print(weather.current(qwx.Location(lat=39.92, lon=116.41)))
 """
 
