@@ -72,8 +72,8 @@ tests/
 
 - `date` 是 8 位日期（YYYYMMDD）；上游最多接受**未来 60 天（含今天）**，超范围由上游拒绝。
 - 日出日落可能为 null（高纬度与极昼极夜）→ Go 指针字段映射成 `X | None = None`。
-- `solar_elevation_angle` 只认坐标，还要 `time`（HHMM，4 位）、`tz`（时区偏移，
-  如 `+08:00`）、`alt`（海拔，米，必填）。
+- `solar_elevation_angle` 只认坐标，还要 `time`（HHmm，4 位，如 0800）、`tz`（时区偏移，HHmm 形式，如 0800、-0530，范围 [-12:00,+14:00]）、`alt`（海拔，米，必填且不能为负）。
+  日期与时间都要在客户端校验：`date` 必须是 yyyyMMdd 的合法日历日期，`time` 必须是合法 24 小时制。
 - `sun` 没有语言参数（键里也没有参数后缀）；`moon` 有（多语言月相文案）。
 - 缓存键的 `{location}` 段用 `loc.query()`。
 
@@ -90,7 +90,7 @@ tests/
 
 - `days` 只支持 1 与 3（实测 2d/7d/10d/15d/30d 全 404），其它值抛
   `InvalidParameterError`。
-- `type` 是 0~16 的闭集，越界抛 `InvalidParameterError`。
+- `type` 是 0~16 的闭集，越界抛 `InvalidParameterError`；0 是「全部」，不能与其它类型同时出现，组合时抛 `InvalidParameterError`；类型列表为空也抛 `InvalidParameterError`。
 - 只认坐标对；传裸经度（如 `121.47`）上游 400 → 客户端要挡。
 - 两个方法：单类型与多类型（一次查多种指数），共用端点常量。
 
