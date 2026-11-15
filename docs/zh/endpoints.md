@@ -59,9 +59,10 @@
 | `qwx.v7.historical` | 旧一代历史天气 `/v7/historical/weather` |
 | `qwx.geo` | GeoAPI `/geo/v2/*` |
 | `qwx.console` | 控制台 `/finance/v1/*`、`/metrics/v1/stats` |
+| `qwx.quick` | 组合层：按位置一次取齐天气、空气质量与预警 |
 | `qwx.redis_cache` | Redis 缓存实现（可选依赖 `qwx[redis]`） |
 
-一个模块 = 一个上游资源族。两个例外：`geo` 的四个检索端点共享 `Place` 类型，`console` 的两个端点在上游归在同一页文档下、共享同一套响应骨架。
+一个模块 = 一个上游资源族。两个例外：`geo` 的四个检索端点共享 `Place` 类型，`console` 的两个端点在上游归在同一页文档下、共享同一套响应骨架。`qwx.quick` 不对应上游资源族：它是组合层，把 GeoAPI 城市检索与三个新一代端点组合成一次调用。
 
 ## 端点契约
 
@@ -86,6 +87,7 @@
 | `qwx.v7.ocean` | `OceanService` / `AsyncOceanService` | 旧一代潮汐 |
 | `qwx.geo` | `GeoService` / `AsyncGeoService` | GeoAPI |
 | `qwx.console` | `ConsoleService` / `AsyncConsoleService` | 控制台（财务汇总、请求量统计） |
+| `qwx.quick` | `QuickService` / `AsyncQuickService` | 快速查询组合层（城市检索 + 天气 + 空气质量 + 预警） |
 
 `qwx.geo` 是唯一的例外：它的四个检索端点共享同一个地点类型，拆开会让该类型失去归属。
 
@@ -115,6 +117,43 @@ async with qwx.AsyncClient(auth, "abcxyz.qweatherapi.com") as client:
 所有模块共用同一个基础客户端 `qwx.Client(auth, api_host, ...)`。`api_host` 是控制台「设置」页里的专属 API Host，必填；路径前缀因 Host 而定，GeoAPI 在专属 Host 下是 `/geo/v2/*`。
 
 端点常量用于按端点调缓存时长，见[自定义 TTL](cache.md#自定义-ttl)。
+
+### 快速查询（组合层）
+
+`qwx.quick` 把几个端点合成一次调用：位置是坐标对时直接用，是地名或 LocationID 时先查 GeoAPI 换坐标，然后并发取齐五块数据。
+
+```python
+import qwx
+from qwx.quick import Options, Part, QuickService
+
+with qwx.Client(auth, "abcxyz.qweatherapi.com") as client:
+    report = QuickService(client).query("北京", Options(lang=qwx.Lang.ZH, local_time=True))
+    print(report.current, report.hourly, report.daily)
+    print(report.air_quality, report.alerts, report.errors)
+```
+
+| 位置写法 | 例子 | 说明 |
+| --- | --- | --- |
+| 坐标字符串 | `"116.41,39.92"` | 经度在前，用 `qwx.parse_location` 识别，直接用，不查 GeoAPI |
+| 地名 | `"北京"` | 识别不了坐标对与 LocationID，一律当地名，先查 GeoAPI |
+| LocationID | `"101010100"` | 先查 GeoAPI 换坐标 |
+| `Location` | `qwx.Location(lat=39.92, lon=116.41)` | 带坐标直接用，带 ID 或地名先查 GeoAPI |
+
+| 选项 | 默认 | 作用范围 |
+| --- | --- | --- |
+| `lang` | 上游默认 | 五块数据 |
+| `local_time` | False | 天气与预警（上游的空气质量没有当地时间参数） |
+| `hours` | 24（取值 1~240） | 逐小时预报 |
+| `days` | 3（取值 1~10） | 逐日预报 |
+| `number` | 上游默认 | 城市检索 |
+| `adm` | 空 | 城市检索：上级行政区划 |
+| `range` | 空 | 城市检索：ISO 3166 国家代码 |
+| `skip` | 空 | 跳过数据块，未知块抛 `InvalidParameterError` |
+| `strict` | False | 任一块失败即抛 `EndpointError` |
+
+返回的 `Report` 里每块各自独立：没取到的块对应字段为 `None`，失败原因在 `errors`。默认宽松 —— 某块失败记进 `errors`，其余照常返回；全部失败才抛 `qwx.quick.EndpointError`（原始异常在 `err.error`）。
+
+`qwx.quick` 不另起缓存键：它用的就是各端点自己的键，缓存与 TTL 策略照常生效。
 
 ### 新一代（只认坐标）
 

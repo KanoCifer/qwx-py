@@ -95,6 +95,8 @@ client = qwx.Client(auth, "abcxyz.qweatherapi.com", cache=cache)
 
 键字面量在已发布版本里定死，改动会让已写入的缓存条目全部失效。`qwx.v7.ocean` 的键前缀是 `qwx:tide:` 而不是 `qwx:ocean:`，与模块名不对齐是有意为之，不要「顺手修正」。
 
+`qwx.quick` 不产生新键：快速查询用的就是它调用的那几个端点的键，缓存与 TTL 策略照常生效。
+
 后缀承载影响结果的查询参数：语言 `:lang=<lang>`、新一代本地时间 `:localTime=1`、条数 `:n=<number>`、半径 `:r=<radius>`、行政区划 `:adm=<adm>`、搜索范围 `:range=<range>`、限定城市 `:city=<city>`、时间间隔 `:interval=<n>`、倾斜角 `:tilt=<n>`、方位角 `:azimuth=<n>`、额外信息 `:extra=<extra>`、项目 `:project=<project>`、凭据 `:credential=<credential>`。坐标统一两位小数，`-0` 归一为 `0.00`。
 
 语言段进的是 API 代码（`:lang=zh`），不是语言名。`qwx.Lang` 的 `api` 字段。

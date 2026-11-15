@@ -200,6 +200,37 @@ qwx.parse_location("116.41,39.92")  # 从字符串解析：经度在前
 
 每个端点认哪种形态见[支持的接口](#endpoints)的表。
 
+<a id="quick"></a>
+### ⚡ 快速查询
+
+`qwx.quick` 是组合层，不是新的上游端点：一次调用把实时天气、逐小时预报、逐日预报、空气质量与预警一次取齐。
+
+```python
+import qwx
+from qwx.quick import Options, QuickService
+
+with qwx.Client(auth, "abcxyz.qweatherapi.com") as client:
+    report = QuickService(client).query("北京", Options(lang=qwx.Lang.ZH, local_time=True))
+    print(report.location, report.place)
+    print(report.current.temperature, report.air_quality, report.alerts)
+```
+
+位置三种写法都认：
+
+| 写法 | 例子 | 说明 |
+| --- | --- | --- |
+| 坐标字符串 | `"116.41,39.92"` | 经度在前，直接用，不查 GeoAPI |
+| 地名 | `"北京"` | 先查 GeoAPI 换坐标，新一代接口只认坐标 |
+| LocationID | `"101010100"` | 先查 GeoAPI 换坐标 |
+| `Location` | `qwx.Location(lat=39.92, lon=116.41)` | 带坐标直接用，带 ID 或地名先查 GeoAPI |
+
+- 五块数据并发取，缓存与 TTL 各自按端点常量走 —— quick 不另起缓存键。
+- 默认宽松：某块失败记进 `report.errors`，其余照常返回；全部失败才抛 `qwx.quick.EndpointError`。
+- `Options(strict=True)` 时任一块失败即抛 `EndpointError`，原始异常在 `err.error`。
+- `Options(skip=...)` 跳过不关心的块 —— 账号没开通空气质量权限时可以直接跳过它。
+- 逐时逐日的条数用 `Options(hours=..., days=...)`，默认 24 小时与 3 天，越界在客户端抛异常。
+- 异步版 `AsyncQuickService` 用法对称，方法变成协程。
+
 <a id="lang"></a>
 ### 🌐 多语言
 
@@ -410,6 +441,8 @@ client = qwx.Client(auth, "abcxyz.qweatherapi.com", http_client=http)
 | `qwx.v7.storm` | `track` | `/v7/tropical/storm-track` | 无 |
 
 每个端点的参数、返回类型与取值范围见 [docs/zh/endpoints.md](docs/zh/endpoints.md)。
+
+`qwx.quick` 是组合层，不在上表里：它把天气、空气质量、预警与 GeoAPI 城市检索合成一次调用，见[快速查询](#quick)。
 
 ---
 

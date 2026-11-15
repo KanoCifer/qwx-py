@@ -200,6 +200,37 @@ Coordinates keep two decimals inside the SDK, and `-0` is normalized to `0.00`. 
 
 The table under [Supported endpoints](#endpoints) lists the form each endpoint accepts.
 
+<a id="quick"></a>
+### ⚡ Quick query
+
+`qwx.quick` is a composition layer, not a new upstream endpoint: one call fetches the current weather, the hourly and daily forecasts, the air quality and the alerts.
+
+```python
+import qwx
+from qwx.quick import Options, QuickService
+
+with qwx.Client(auth, "abcxyz.qweatherapi.com") as client:
+    report = QuickService(client).query("Beijing", Options(lang=qwx.Lang.EN, local_time=True))
+    print(report.location, report.place)
+    print(report.current.temperature, report.air_quality, report.alerts)
+```
+
+All three location forms are accepted:
+
+| Form | Example | Notes |
+| --- | --- | --- |
+| Coordinate string | `"116.41,39.92"` | Longitude first, used as is, no GeoAPI call |
+| Place name | `"Beijing"` | Looked up through GeoAPI first, the new-generation endpoints only take coordinates |
+| LocationID | `"101010100"` | Looked up through GeoAPI first |
+| `Location` | `qwx.Location(lat=39.92, lon=116.41)` | Coordinates are used as is, an ID or a name is looked up first |
+
+- The five parts are fetched concurrently, each with its own cache and TTL — quick starts no cache keys of its own.
+- Lenient by default: a failed part is recorded in `report.errors`, the other parts still come back; only when every part fails does it raise `qwx.quick.EndpointError`.
+- With `Options(strict=True)` any failed part raises `EndpointError` right away, the original exception is in `err.error`.
+- `Options(skip=...)` drops the parts you do not care about — skip the air quality when the account has no permission for it.
+- The forecast ranges come from `Options(hours=..., days=...)`, 24 hours and 3 days by default, out-of-range values raise before any request is sent.
+- `AsyncQuickService` is symmetric, its methods are coroutines.
+
 <a id="lang"></a>
 ### 🌐 Language
 
@@ -410,6 +441,8 @@ The async version is the same, with an `httpx.AsyncClient`.
 | `qwx.v7.storm` | `track` | `/v7/tropical/storm-track` | None |
 
 Parameters, return types and value ranges of each endpoint are documented in [docs/en/endpoints.md](docs/en/endpoints.md).
+
+`qwx.quick` is a composition layer and is not in the table above: it merges weather, air quality, alerts and the GeoAPI city lookup into one call, see [Quick query](#quick).
 
 ---
 

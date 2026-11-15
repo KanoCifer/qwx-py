@@ -59,9 +59,10 @@ The **value** of an endpoint constant never changes after release: `qwx.TTLPolic
 | `qwx.v7.historical` | Old-generation historical weather `/v7/historical/weather` |
 | `qwx.geo` | GeoAPI `/geo/v2/*` |
 | `qwx.console` | Console `/finance/v1/*`, `/metrics/v1/stats` |
+| `qwx.quick` | Composition layer: one call for weather, air quality and alerts |
 | `qwx.redis_cache` | Redis cache implementation (optional dependency `qwx[redis]`) |
 
-One module = one upstream resource family. Two exceptions: the four lookup endpoints of `geo` share the `Place` type, and the two endpoints of `console` are documented on the same upstream page and share one response skeleton.
+One module = one upstream resource family. Two exceptions: the four lookup endpoints of `geo` share the `Place` type, and the two endpoints of `console` are documented on the same upstream page and share one response skeleton. `qwx.quick` maps to no upstream family: it is a composition layer that turns the GeoAPI city lookup and three new-generation endpoints into one call.
 
 ## Endpoint Contracts
 
@@ -86,6 +87,7 @@ Endpoints live in different modules depending on the upstream generation, and th
 | `qwx.v7.ocean` | `OceanService` / `AsyncOceanService` | Old-generation tide |
 | `qwx.geo` | `GeoService` / `AsyncGeoService` | GeoAPI |
 | `qwx.console` | `ConsoleService` / `AsyncConsoleService` | Console (finance summary, request volume statistics) |
+| `qwx.quick` | `QuickService` / `AsyncQuickService` | Quick query composition layer (city lookup + weather + air quality + alerts) |
 
 `qwx.geo` is the only exception: its four lookup endpoints share one place type, and splitting them would leave that type without an owner.
 
@@ -133,6 +135,43 @@ Endpoint constants are used to set the cache duration per endpoint, see [Custom 
 Out-of-range parameters are intercepted client-side: `hours`/`days` raise `qwx.InvalidParameterError`, missing coordinates raise `qwx.InvalidLocationError`; neither case reaches upstream.
 
 Allowed values for the `Options` fields of the solar radiation forecast: `interval` can only be 15, 30, 60 (0 means do not send it, and the upstream default of 60 applies); `tilt` 0~90; `azimuth` 0~359; `extra` accepts only `"weather"` and `"poa"`, multiple values are comma-separated, and duplicates or unknown values are rejected. When `extra` contains `"poa"`, upstream requires both `tilt` and `azimuth`.
+
+### Quick Query (Composition Layer)
+
+`qwx.quick` merges several endpoints into one call: coordinates are used as is, a place name or a LocationID is turned into coordinates through GeoAPI first, then the five parts are fetched concurrently.
+
+```python
+import qwx
+from qwx.quick import Options, Part, QuickService
+
+with qwx.Client(auth, "abcxyz.qweatherapi.com") as client:
+    report = QuickService(client).query("Beijing", Options(lang=qwx.Lang.EN, local_time=True))
+    print(report.current, report.hourly, report.daily)
+    print(report.air_quality, report.alerts, report.errors)
+```
+
+| Location form | Example | Notes |
+| --- | --- | --- |
+| Coordinate string | `"116.41,39.92"` | Longitude first, recognized by `qwx.parse_location`, used as is, no GeoAPI call |
+| Place name | `"Beijing"` | Anything that is neither a coordinate pair nor a LocationID is a place name, looked up through GeoAPI |
+| LocationID | `"101010100"` | Turned into coordinates through GeoAPI |
+| `Location` | `qwx.Location(lat=39.92, lon=116.41)` | Coordinates are used as is, an ID or a name is looked up first |
+
+| Option | Default | Scope |
+| --- | --- | --- |
+| `lang` | Upstream default | All five parts |
+| `local_time` | False | Weather and alerts (the upstream air quality endpoints have no local time parameter) |
+| `hours` | 24 (range 1~240) | Hourly forecast |
+| `days` | 3 (range 1~10) | Daily forecast |
+| `number` | Upstream default | City lookup |
+| `adm` | Empty | City lookup: the parent administrative division |
+| `range` | Empty | City lookup: ISO 3166 country code |
+| `skip` | Empty | Parts to drop, an unknown part raises `InvalidParameterError` |
+| `strict` | False | Any failed part raises `EndpointError` |
+
+Every part of the returned `Report` stands on its own: a part that was not fetched is `None`, the reason is in `errors`. Lenient by default — a failed part is recorded in `errors` while the others come back; only when every part fails does it raise `qwx.quick.EndpointError` (the original exception is in `err.error`).
+
+`qwx.quick` starts no cache keys of its own: it uses the keys of the endpoints it calls, so caching and the TTL policy work as usual.
 
 ### GeoAPI (Coordinates / LocationID / Place Name)
 
