@@ -41,6 +41,40 @@
 
 端点常量的**值**发布后不再变更：`qwx.TTLPolicy` 按值匹配，改值会让用户的 TTL 配置静默失效。
 
+### 端点常量
+
+下面这张表由源码扫出来生成，改了源码忘了改文档，漂移测试会失败。刷新命令：`python tools/endpoints.py --write`。
+
+<!-- BEGIN GENERATED: constants -->
+| 端点常量 | 值 | 模块 | 方法 |
+| --- | --- | --- | --- |
+| `qwx.console.EndpointFinance` | `finance/v1/summary` | `qwx.console` | finance |
+| `qwx.console.EndpointStats` | `metrics/v1/stats` | `qwx.console` | stats |
+| `qwx.geo.EndpointCity` | `geo/v2/city/lookup` | `qwx.geo` | lookup_city |
+| `qwx.geo.EndpointPOI` | `geo/v2/poi/lookup` | `qwx.geo` | lookup_poi |
+| `qwx.geo.EndpointPOIRange` | `geo/v2/poi/range` | `qwx.geo` | poi_range |
+| `qwx.geo.EndpointTopCities` | `geo/v2/city/top` | `qwx.geo` | top_cities |
+| `qwx.v1.airquality.EndpointCurrent` | `airquality/v1/current` | `qwx.v1.airquality` | current |
+| `qwx.v1.airquality.EndpointDaily` | `airquality/v1/daily` | `qwx.v1.airquality` | daily |
+| `qwx.v1.airquality.EndpointHourly` | `airquality/v1/hourly` | `qwx.v1.airquality` | hourly |
+| `qwx.v1.airquality.EndpointStation` | `airquality/v1/stations` | `qwx.v1.airquality` | station |
+| `qwx.v1.alert.Endpoint` | `weatheralert/v1/current` | `qwx.v1.alert` | current |
+| `qwx.v1.solarradiation.Endpoint` | `solarradiation/v1/forecast` | `qwx.v1.solarradiation` | forecast |
+| `qwx.v1.weather.EndpointCurrent` | `weather/v1/current` | `qwx.v1.weather` | current |
+| `qwx.v1.weather.EndpointDaily` | `weather/v1/daily` | `qwx.v1.weather` | daily |
+| `qwx.v1.weather.EndpointHourly` | `weather/v1/hourly` | `qwx.v1.weather` | hourly |
+| `qwx.v7.astronomy.EndpointAngle` | `v7/astronomy/solar-elevation-angle` | `qwx.v7.astronomy` | solar_elevation_angle |
+| `qwx.v7.astronomy.EndpointMoon` | `v7/astronomy/moon` | `qwx.v7.astronomy` | moon |
+| `qwx.v7.astronomy.EndpointSun` | `v7/astronomy/sun` | `qwx.v7.astronomy` | sun |
+| `qwx.v7.historical.Endpoint` | `v7/historical/weather` | `qwx.v7.historical` | weather |
+| `qwx.v7.indices.Endpoint` | `v7/indices` | `qwx.v7.indices` | indices、indices_multi |
+| `qwx.v7.minutely.Endpoint` | `v7/minutely/5m` | `qwx.v7.minutely` | minutely |
+| `qwx.v7.ocean.Endpoint` | `v7/ocean/tide` | `qwx.v7.ocean` | tide |
+| `qwx.v7.storm.EndpointForecast` | `v7/tropical/storm-forecast` | `qwx.v7.storm` | forecast |
+| `qwx.v7.storm.EndpointList` | `v7/tropical/storm-list` | `qwx.v7.storm` | list |
+| `qwx.v7.storm.EndpointTrack` | `v7/tropical/storm-track` | `qwx.v7.storm` | track |
+<!-- END GENERATED: constants -->
+
 ### 模块结构
 
 | 模块 | 承载 |
@@ -194,17 +228,17 @@ with qwx.Client(auth, "abcxyz.qweatherapi.com") as client:
 
 | 模块 | 方法 | 上游路径 | 参数 | 返回 | 端点常量 |
 | --- | --- | --- | --- | --- | --- |
-| `qwx.v7.ocean` | `tide` | `GET /v7/ocean/tide` | `station_id` 潮汐站 ID（`P2352`）；`date` 为站点当地 `YYYYMMDD` | `Result` | `Endpoint` |
+| `qwx.v7.ocean` | `tide` | `GET /v7/ocean/tide` | `station_id` 潮汐站 ID（`P2352`）；`date` 为站点当地 `yyyyMMdd`（客户端校验合法日历日） | `Result` | `Endpoint` |
 | `qwx.v7.indices` | `indices` | `GET /v7/indices/{days}d` | `loc` 只认坐标；`typ` 0..16；`days` ∈ {1, 3}；`lang` | `Result` | `Endpoint` |
 | `qwx.v7.indices` | `indices_multi` | `GET /v7/indices/{days}d` | 同上，`typ` 可传多个（`[3, 5]`） | `Result` | `Endpoint` |
 | `qwx.v7.minutely` | `minutely` | `GET /v7/minutely/5m` | `loc` 只认坐标；`lang` | `Result` | `Endpoint` |
 | `qwx.v7.storm` | `list` | `GET /v7/tropical/storm-list` | `basin` 只认 `NP`；`year` 正整数 | `ListResult` | `EndpointList` |
 | `qwx.v7.storm` | `forecast` | `GET /v7/tropical/storm-forecast` | `storm_id` 非空 | `ForecastResult` | `EndpointForecast` |
 | `qwx.v7.storm` | `track` | `GET /v7/tropical/storm-track` | `storm_id` 非空 | `TrackResult` | `EndpointTrack` |
-| `qwx.v7.astronomy` | `sun` | `GET /v7/astronomy/sun` | `loc` 认坐标或 LocationID；`date` 为 `YYYYMMDD` | `SunResult` | `EndpointSun` |
+| `qwx.v7.astronomy` | `sun` | `GET /v7/astronomy/sun` | `loc` 认坐标或 LocationID；`date` 为 `yyyyMMdd` | `SunResult` | `EndpointSun` |
 | `qwx.v7.astronomy` | `moon` | `GET /v7/astronomy/moon` | 同上；`opts: Options(lang)` | `MoonResult` | `EndpointMoon` |
 | `qwx.v7.astronomy` | `solar_elevation_angle` | `GET /v7/astronomy/solar-elevation-angle` | `loc` 只认坐标；`date`、`time_str`（`HHmm`）、`tz`（如 `0800`）、`alt`（海拔，米，非负） | `AngleResult` | `EndpointAngle` |
-| `qwx.v7.historical` | `weather` | `GET /v7/historical/weather` | `loc` 只认 LocationID；`date` 为 `YYYYMMDD`；`opts: Options(lang)` | `Result` | `Endpoint` |
+| `qwx.v7.historical` | `weather` | `GET /v7/historical/weather` | `loc` 只认 LocationID；`date` 为 `yyyyMMdd`；`opts: Options(lang)` | `Result` | `Endpoint` |
 
 `qwx.v7.indices` 的 `typ` 取 0~16，0 表示全部（`TYPE_ALL`）；`indices_multi` 传多个类型时不能带上 0。`days` 只支持 1 与 3。
 

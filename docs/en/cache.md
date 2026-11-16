@@ -109,20 +109,22 @@ Keys do not contain the API Host. Different hosts belong to different developer 
 
 There is exactly one place that builds keys: `src/qwx/_cachekey.py`. Endpoint modules do not concatenate strings themselves; they declare two things, which family they belong to and which parameters affect the result.
 
+<!-- BEGIN GENERATED: families -->
 | Family constant | Prefix root | Module |
 | --- | --- | --- |
-| `Family.WEATHER` | `qwx:v1:` | `qwx.v1.weather` |
-| `Family.AIR_QUALITY` | `qwx:aq:v1:` | `qwx.v1.airquality` |
-| `Family.ALERT` | `qwx:alert:v1:` | `qwx.v1.alert` |
-| `Family.GEO` | `qwx:geo:` | `qwx.geo` |
-| `Family.TIDE` | `qwx:tide:` | `qwx.v7.ocean` |
-| `Family.INDICES` | `qwx:indices:` | `qwx.v7.indices` |
-| `Family.MINUTELY` | `qwx:minutely:` | `qwx.v7.minutely` |
-| `Family.SOLAR_RADIATION` | `qwx:solarradiation:v1:` | `qwx.v1.solarradiation` |
-| `Family.STORM` | `qwx:storm:` | `qwx.v7.storm` |
-| `Family.ASTRONOMY` | `qwx:astronomy:` | `qwx.v7.astronomy` |
-| `Family.HISTORICAL` | `qwx:historical:` | `qwx.v7.historical` |
-| `Family.CONSOLE` | `qwx:console:` | `qwx.console` |
+| `Family.AIR_QUALITY` | `qwx:aq:v1:` | qwx.v1.airquality |
+| `Family.ALERT` | `qwx:alert:v1:` | qwx.v1.alert |
+| `Family.ASTRONOMY` | `qwx:astronomy:` | qwx.v7.astronomy |
+| `Family.CONSOLE` | `qwx:console:` | qwx.console |
+| `Family.GEO` | `qwx:geo:` | qwx.geo |
+| `Family.HISTORICAL` | `qwx:historical:` | qwx.v7.historical |
+| `Family.INDICES` | `qwx:indices:` | qwx.v7.indices |
+| `Family.MINUTELY` | `qwx:minutely:` | qwx.v7.minutely |
+| `Family.SOLAR_RADIATION` | `qwx:solarradiation:v1:` | qwx.v1.solarradiation |
+| `Family.STORM` | `qwx:storm:` | qwx.v7.storm |
+| `Family.TIDE` | `qwx:tide:` | qwx.v7.ocean |
+| `Family.WEATHER` | `qwx:v1:` | qwx.v1.weather |
+<!-- END GENERATED: families -->
 
 The shape is fixed: family prefix + location segment + parameter segment.
 
@@ -132,10 +134,18 @@ The shape is fixed: family prefix + location segment + parameter segment.
 
 Query parameters that affect the result are declared with the same `qwx._cachekey.Params`, which generates both the upstream query string and the key suffix. Adding a parameter means changing this one place only, so a parameter cannot silently miss the key.
 
+Parameters are grouped by owner: shared parameters (language, local time, count) sit at the top level, and parameters that only one resource family uses go into that family's sub-structure — `GeoParams`, `SolarParams`, `ConsoleParams`. Adding a family-specific parameter touches that family, not the bag shared by all of them.
+
 ```python
 # src/qwx/v1/weather/client.py
-def _params(opts: Options) -> Params:
-    return Params(lang=opts.lang.api, local_time=opts.local_time)
+params = v1_params(opts.lang.api, opts.local_time)
+
+# src/qwx/geo/client.py
+params = Params(
+    lang=options.lang.api,
+    number=options.number,
+    geo=GeoParams(adm=options.adm, range=options.range),
+)
 ```
 
 `None` represents "the endpoint has no radius parameter". A radius of 0 enters the key only and is not sent upstream, where upstream applies its own default.

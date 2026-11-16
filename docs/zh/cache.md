@@ -109,20 +109,22 @@ client = qwx.Client(auth, "abcxyz.qweatherapi.com", cache=cache)
 
 拼法只有一处：`src/qwx/_cachekey.py`。端点模块不自己拼字符串，只声明两件事，自己属于哪个族、有哪些影响结果的参数。
 
+<!-- BEGIN GENERATED: families -->
 | 族常量 | 前缀根 | 模块 |
 | --- | --- | --- |
-| `Family.WEATHER` | `qwx:v1:` | `qwx.v1.weather` |
-| `Family.AIR_QUALITY` | `qwx:aq:v1:` | `qwx.v1.airquality` |
-| `Family.ALERT` | `qwx:alert:v1:` | `qwx.v1.alert` |
-| `Family.GEO` | `qwx:geo:` | `qwx.geo` |
-| `Family.TIDE` | `qwx:tide:` | `qwx.v7.ocean` |
-| `Family.INDICES` | `qwx:indices:` | `qwx.v7.indices` |
-| `Family.MINUTELY` | `qwx:minutely:` | `qwx.v7.minutely` |
-| `Family.SOLAR_RADIATION` | `qwx:solarradiation:v1:` | `qwx.v1.solarradiation` |
-| `Family.STORM` | `qwx:storm:` | `qwx.v7.storm` |
-| `Family.ASTRONOMY` | `qwx:astronomy:` | `qwx.v7.astronomy` |
-| `Family.HISTORICAL` | `qwx:historical:` | `qwx.v7.historical` |
-| `Family.CONSOLE` | `qwx:console:` | `qwx.console` |
+| `Family.AIR_QUALITY` | `qwx:aq:v1:` | qwx.v1.airquality |
+| `Family.ALERT` | `qwx:alert:v1:` | qwx.v1.alert |
+| `Family.ASTRONOMY` | `qwx:astronomy:` | qwx.v7.astronomy |
+| `Family.CONSOLE` | `qwx:console:` | qwx.console |
+| `Family.GEO` | `qwx:geo:` | qwx.geo |
+| `Family.HISTORICAL` | `qwx:historical:` | qwx.v7.historical |
+| `Family.INDICES` | `qwx:indices:` | qwx.v7.indices |
+| `Family.MINUTELY` | `qwx:minutely:` | qwx.v7.minutely |
+| `Family.SOLAR_RADIATION` | `qwx:solarradiation:v1:` | qwx.v1.solarradiation |
+| `Family.STORM` | `qwx:storm:` | qwx.v7.storm |
+| `Family.TIDE` | `qwx:tide:` | qwx.v7.ocean |
+| `Family.WEATHER` | `qwx:v1:` | qwx.v1.weather |
+<!-- END GENERATED: families -->
 
 形状固定：族前缀 + 位置段 + 参数段。
 
@@ -132,10 +134,18 @@ client = qwx.Client(auth, "abcxyz.qweatherapi.com", cache=cache)
 
 影响结果的查询参数用同一个 `qwx._cachekey.Params` 声明，它同时生成上游查询串与键的后缀。新增参数只改这一处，参数漏进键不会发生。
 
+参数按归属分组：通用参数（语言、本地时间、条数）在顶层，只服务某个资源族的参数放进该族的子结构 —— GeoAPI 专有的进 `GeoParams`，太阳辐射专有的进 `SolarParams`，控制台专有的进 `ConsoleParams`。新增某个族专有的参数时动的是那个族，不是所有族共用的袋子。
+
 ```python
 # src/qwx/v1/weather/client.py
-def _params(opts: Options) -> Params:
-    return Params(lang=opts.lang.api, local_time=opts.local_time)
+params = v1_params(opts.lang.api, opts.local_time)
+
+# src/qwx/geo/client.py
+params = Params(
+    lang=options.lang.api,
+    number=options.number,
+    geo=GeoParams(adm=options.adm, range=options.range),
+)
 ```
 
 半径用 `None` 表示「端点没有半径参数」；半径为 0 时只进键、不发给上游，上游按自己的默认值处理。
