@@ -45,5 +45,8 @@ jobs:
       - name: Type check
         run: mypy
 
+      - name: Docs drift
+        run: python tools/endpoints.py --check
+
       - name: Test
         run: python -m pytest tests/ -q
