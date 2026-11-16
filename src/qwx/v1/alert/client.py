@@ -9,11 +9,11 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import Any, cast
 
-from qwx._cachekey import Family, Key, Params
+from qwx._cachekey import Family, Key, v1_params
 from qwx._coord import format_coord
 from qwx._service import Service
 from qwx.location import Location
-from qwx.request import Request
+from qwx.request import METHOD_GET, Request
 from qwx.v1.alert.types import Endpoint, Result
 from qwx.v1.types import Options
 
@@ -21,14 +21,6 @@ __all__ = ["AlertService", "AsyncAlertService"]
 
 CACHE_TTL = timedelta(seconds=300)
 """预警接口的默认缓存时长：上游 5 分钟更新一次预警。"""
-
-
-def _params(opts: Options) -> Params:
-    """把可选参数换成影响结果的查询参数。
-
-    同一份参数既生成上游查询串，也生成缓存键后缀 —— 新增参数时不会漏进键。
-    """
-    return Params(lang=opts.lang.api, local_time=opts.local_time)
 
 
 class _AlertCalls(Service):
@@ -39,9 +31,9 @@ class _AlertCalls(Service):
         options.lang.validate()
         lat, lon = loc.coordinates()
         lat_part, lon_part = format_coord(lat), format_coord(lon)
-        p = _params(options)
+        p = v1_params(options.lang.api, options.local_time)
         request = Request(
-            method="GET",
+            method=METHOD_GET,
             path=f"/weatheralert/v1/current/{lat_part}/{lon_part}",
             query=p.query(),
             endpoint=Endpoint,

@@ -11,6 +11,7 @@ from enum import Enum
 from pydantic import Field
 
 from qwx._models import QwxModel
+from qwx.errors import InvalidParameterError
 from qwx.lang import Lang
 from qwx.location import parse_location
 from qwx.refer import Refer
@@ -117,6 +118,22 @@ class POIType(str, Enum):
 
     TSTA = "TSTA"
     """潮汐观测站。"""
+
+    @classmethod
+    def validate(cls, value: POIType | str) -> str:
+        """把 POI 类型归一成上游与缓存键都用的代码。
+
+        上游只认 scenic、CSTA、TSTA 三类，其他类型上游直接 400。闭集外的
+        类型抛 [qwx.errors.InvalidParameterError]，不打上游。
+        """
+        code = value.value if isinstance(value, POIType) else str(value)
+        if code not in _POI_TYPE_VALUES:
+            raise InvalidParameterError(f"qwx: unsupported POI type {code!r}")
+        return code
+
+
+_POI_TYPE_VALUES = frozenset(item.value for item in POIType)
+"""上游支持的 POI 检索类型。"""
 
 
 class Place(QwxModel):

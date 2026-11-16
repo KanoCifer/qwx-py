@@ -39,7 +39,7 @@ from qwx.lang import LANGS, Lang, lookup_lang
 from qwx.location import Location, parse_location
 from qwx.logger import Logger
 from qwx.refer import MetaData, Refer
-from qwx.request import AsyncDoer, Doer, Request
+from qwx.request import METHOD_GET, AsyncDoer, Doer, Request
 from qwx.timeutil import parse_qtime
 from qwx.ttl import Endpoint, TTLMap, TTLPolicy, TTLPolicyFunc, current_ttl_override, override_ttl
 
@@ -51,6 +51,7 @@ except PackageNotFoundError:  # 源码树里直接跑，没有安装元数据
 
 __all__ = [
     "LANGS",
+    "METHOD_GET",
     "APIKeyAuth",
     "AsyncClient",
     "AsyncDoer",

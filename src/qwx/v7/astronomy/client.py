@@ -10,14 +10,16 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any, cast
 
 from qwx._cachekey import Family, Key, Params
+from qwx._param import is_digits, validate_date
 from qwx._service import Service
+from qwx._upstream import ALTITUDE, DATE, LOCATION, TIME, TIMEZONE
 from qwx.errors import InvalidLocationError, InvalidParameterError
 from qwx.location import Location
-from qwx.request import Request
+from qwx.request import METHOD_GET, Request
 
 from .types import (
     AngleResult,
@@ -53,23 +55,9 @@ def _require_coord(loc: Location) -> None:
         raise InvalidLocationError("qwx: solar elevation angle requires coordinates")
 
 
-def _validate_date(date: str) -> None:
-    """校验日期格式为 yyyyMMdd 且是真实日期。
-
-    日期范围（上游最多接受未来 60 天，含今天）不在这里判断 —— 那要拿
-    「今天」比，上游自己会回 400。
-    """
-    if len(date) != 8 or not date.isdigit():
-        raise InvalidParameterError(f"qwx: date {date!r} must be in yyyyMMdd format")
-    try:
-        datetime.strptime(date, "%Y%m%d")
-    except ValueError:
-        raise InvalidParameterError(f"qwx: date {date!r} is not a valid calendar date") from None
-
-
 def _validate_time(time_str: str) -> None:
     """校验时间格式为 HHmm，取值 0000~2359。"""
-    if len(time_str) != 4 or not time_str.isdigit():
+    if len(time_str) != 4 or not is_digits(time_str):
         raise InvalidParameterError(f"qwx: time {time_str!r} must be in HHmm format")
     hours = int(time_str[:2])
     minutes = int(time_str[2:])
@@ -89,7 +77,7 @@ def _validate_timezone(tz: str) -> None:
         digits = tz[1:]
     elif len(tz) != 4:
         raise InvalidParameterError(f"qwx: tz {tz!r} must be in HHmm format, like 0800 or -0530")
-    if not digits.isdigit():
+    if not is_digits(digits):
         raise InvalidParameterError(f"qwx: tz {tz!r} must be in HHmm format, like 0800 or -0530")
     hours = int(digits[:2])
     minutes = int(digits[2:])
@@ -106,12 +94,12 @@ class _AstronomyCalls(Service):
     def _sun_call(self, loc: Location, date: str) -> Any:
         """日出日落的请求参数与发送。"""
         _require_id_or_coord(loc)
-        _validate_date(date)
+        validate_date(date)
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path="/v7/astronomy/sun",
-                query={"location": loc.query(), "date": date},
+                query={LOCATION: loc.query(), DATE: date},
                 endpoint=EndpointSun,
                 cache_key=str(Key(Family.ASTRONOMY).path("sun", loc.query(), date)),
                 ttl=CACHE_TTL,
@@ -122,16 +110,16 @@ class _AstronomyCalls(Service):
     def _moon_call(self, loc: Location, date: str, opts: Options | None = None) -> Any:
         """月升月落与月相的请求参数与发送。"""
         _require_id_or_coord(loc)
-        _validate_date(date)
+        validate_date(date)
         options = opts if opts is not None else Options()
         options.lang.validate()
         params = Params(lang=options.lang.api)
         query = params.query()
-        query["location"] = loc.query()
-        query["date"] = date
+        query[LOCATION] = loc.query()
+        query[DATE] = date
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path="/v7/astronomy/moon",
                 query=query,
                 endpoint=EndpointMoon,
@@ -151,21 +139,21 @@ class _AstronomyCalls(Service):
     ) -> Any:
         """太阳高度角的请求参数与发送。"""
         _require_coord(loc)
-        _validate_date(date)
+        validate_date(date)
         _validate_time(time_str)
         _validate_timezone(tz)
         if alt < 0:
             raise InvalidParameterError(f"qwx: altitude {alt} must not be negative")
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path="/v7/astronomy/solar-elevation-angle",
                 query={
-                    "location": loc.query(),
-                    "date": date,
-                    "time": time_str,
-                    "tz": tz,
-                    "alt": str(alt),
+                    LOCATION: loc.query(),
+                    DATE: date,
+                    TIME: time_str,
+                    TIMEZONE: tz,
+                    ALTITUDE: str(alt),
                 },
                 endpoint=EndpointAngle,
                 cache_key=str(

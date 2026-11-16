@@ -118,8 +118,7 @@ def test_empty_station_id_is_rejected_without_reaching_upstream() -> None:
     assert calls == []
 
 
-def test_eight_digit_date_is_passed_through_to_upstream() -> None:
-    # 与 Go 版一致：只校验 8 位数字，日历合法性由上游判。
+def test_valid_date_is_passed_through_to_upstream() -> None:
     calls: list[httpx.Request] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -127,9 +126,9 @@ def test_eight_digit_date_is_passed_through_to_upstream() -> None:
         return httpx.Response(200, json={})
 
     service = OceanService(make_client(handler))
-    service.tide("P2352", "20211301")
+    service.tide("P2352", "20210206")
     assert len(calls) == 1
-    assert calls[0].url.params["date"] == "20211301"
+    assert calls[0].url.params["date"] == "20210206"
 
 
 def test_invalid_date_is_rejected_without_reaching_upstream() -> None:
@@ -141,8 +140,8 @@ def test_invalid_date_is_rejected_without_reaching_upstream() -> None:
 
     service = OceanService(make_client(handler))
 
-    # 只校验 8 位数字，不校验日历合法性：非法日历日（如 20211301）交给上游回 400。
-    for date in ("", "2021-02-06", "2021020", "202102061", "2021023 "):
+    # 8 位但不是真实日历日（2025 不是闰年、20211301 没有 13 月）同样在客户端挡下。
+    for date in ("", "2021-02-06", "2021020", "202102061", "2021023 ", "20250229", "20211301"):
         with pytest.raises(InvalidParameterError):
             service.tide("P2352", date)
     assert calls == []

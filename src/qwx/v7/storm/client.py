@@ -15,8 +15,9 @@ from typing import Any, cast
 
 from qwx._cachekey import Family, Key
 from qwx._service import Service
+from qwx._upstream import BASIN, STORM_ID, YEAR
 from qwx.errors import InvalidParameterError
-from qwx.request import Request
+from qwx.request import METHOD_GET, Request
 
 from .types import (
     BasinNP,
@@ -53,9 +54,9 @@ class _StormCalls(Service):
             raise InvalidParameterError(f"qwx: storm year {year} must be positive")
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path="/v7/tropical/storm-list",
-                query={"basin": basin, "year": str(year)},
+                query={BASIN: basin, YEAR: str(year)},
                 endpoint=EndpointList,
                 cache_key=str(Key(Family.STORM).path("list", basin, str(year))),
                 ttl=LIST_CACHE_TTL,
@@ -69,9 +70,9 @@ class _StormCalls(Service):
             raise InvalidParameterError("qwx: storm forecast requires a storm id")
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path="/v7/tropical/storm-forecast",
-                query={"stormid": storm_id},
+                query={STORM_ID: storm_id},
                 endpoint=EndpointForecast,
                 cache_key=str(Key(Family.STORM).path("forecast", storm_id)),
                 ttl=FORECAST_CACHE_TTL,
@@ -85,9 +86,9 @@ class _StormCalls(Service):
             raise InvalidParameterError("qwx: storm track requires a storm id")
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path="/v7/tropical/storm-track",
-                query={"stormid": storm_id},
+                query={STORM_ID: storm_id},
                 endpoint=EndpointTrack,
                 cache_key=str(Key(Family.STORM).path("track", storm_id)),
                 ttl=TRACK_CACHE_TTL,

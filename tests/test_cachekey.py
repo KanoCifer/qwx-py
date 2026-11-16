@@ -8,7 +8,15 @@ from __future__ import annotations
 
 import pytest
 
-from qwx._cachekey import Family, Key, Params
+from qwx._cachekey import (
+    ConsoleParams,
+    Family,
+    GeoParams,
+    Key,
+    Params,
+    SolarParams,
+    v1_params,
+)
 
 
 def test_family_prefixes_are_frozen() -> None:
@@ -83,7 +91,7 @@ def test_families_are_distinct() -> None:
             str(
                 Key(Family.GEO)
                 .path("poirange", "scenic", "116.41,39.92")
-                .params(Params(lang="zh", number=5, radius=5))
+                .params(Params(lang="zh", number=5, geo=GeoParams(radius=5)))
             ),
             "qwx:geo:poirange:scenic:116.41,39.92:lang=zh:n=5:r=5",
         ),
@@ -114,7 +122,10 @@ def test_path_coord_normalizes_negative_zero() -> None:
         (Params(lang="zh"), Params(lang="en")),
         (Params(local_time=True), Params()),
         (Params(number=5), Params(number=10)),
-        (Params(radius=5), Params(radius=10)),
+        (Params(geo=GeoParams(radius=5)), Params(geo=GeoParams(radius=10))),
+        (Params(geo=GeoParams(adm="a")), Params(geo=GeoParams(adm="b"))),
+        (Params(solar=SolarParams(tilt=10)), Params(solar=SolarParams(tilt=20))),
+        (Params(console=ConsoleParams(project="a")), Params(console=ConsoleParams(project="b"))),
     ],
 )
 def test_params_change_key(first: Params, second: Params) -> None:
@@ -128,7 +139,12 @@ def test_params_change_key(first: Params, second: Params) -> None:
 
 def test_params_query_reports_set_params() -> None:
     """设了的参数上报上游。"""
-    query = Params(lang="zh", local_time=True, number=3, radius=5).query()
+    query = Params(
+        lang="zh",
+        local_time=True,
+        number=3,
+        geo=GeoParams(radius=5),
+    ).query()
     assert query == {
         "lang": "zh",
         "localTime": "true",
@@ -139,21 +155,15 @@ def test_params_query_reports_set_params() -> None:
 
 def test_params_query_omits_unset() -> None:
     """没设的参数不上报上游。"""
-    assert Params(number=0, radius=0).query() == {}
+    assert Params(number=0, geo=GeoParams(radius=0)).query() == {}
 
 
 def test_params_query_includes_family_params() -> None:
     """新加的参数也要上报上游。"""
     query = Params(
-        adm="101010100",
-        range="cn",
-        city="101010100",
-        interval=15,
-        tilt=0,
-        azimuth=180,
-        extra="weather,poa",
-        project="proj-1",
-        credential="cred-1",
+        geo=GeoParams(adm="101010100", range="cn", city="101010100"),
+        solar=SolarParams(interval=15, tilt=0, azimuth=180, extra="weather,poa"),
+        console=ConsoleParams(project="proj-1", credential="cred-1"),
     ).query()
     assert query == {
         "adm": "101010100",
@@ -170,7 +180,7 @@ def test_params_query_includes_family_params() -> None:
 
 def test_params_suffix_order() -> None:
     """后缀顺序固定：语言 → 本地时间 → 条数 → 半径。"""
-    got = Params(lang="zh", local_time=True, number=5, radius=0).suffix()
+    got = Params(lang="zh", local_time=True, number=5, geo=GeoParams(radius=0)).suffix()
     assert got == ":lang=zh:localTime=1:n=5:r=0"
 
 
@@ -186,15 +196,9 @@ def test_params_suffix_includes_family_params() -> None:
         lang="zh",
         local_time=True,
         number=5,
-        adm="101010100",
-        range="cn",
-        city="101010100",
-        interval=15,
-        tilt=0,
-        azimuth=180,
-        extra="poa",
-        project="proj-1",
-        credential="cred-1",
+        geo=GeoParams(adm="101010100", range="cn", city="101010100"),
+        solar=SolarParams(interval=15, tilt=0, azimuth=180, extra="poa"),
+        console=ConsoleParams(project="proj-1", credential="cred-1"),
     ).suffix()
     assert got == (
         ":lang=zh:localTime=1:n=5:adm=101010100:range=cn:city=101010100"
@@ -207,7 +211,16 @@ def test_params_tilt_and_azimuth_zero_is_reported() -> None:
 
     与半径的语义相反：非 None 时就要上报，不能当「没传」。
     """
-    query = Params(tilt=0, azimuth=0).query()
+    query = Params(solar=SolarParams(tilt=0, azimuth=0)).query()
     assert query["tilt"] == "0"
     assert query["azimuth"] == "0"
-    assert Params(tilt=0, azimuth=0).suffix() == ":tilt=0:azimuth=0"
+    assert Params(solar=SolarParams(tilt=0, azimuth=0)).suffix() == ":tilt=0:azimuth=0"
+
+
+def test_v1_params_holds_shared_options() -> None:
+    """新一代端点族共用的参数集只写一处。"""
+    params = v1_params("zh", True)
+
+    assert params.lang == "zh"
+    assert params.local_time is True
+    assert params.query() == {"lang": "zh", "localTime": "true"}

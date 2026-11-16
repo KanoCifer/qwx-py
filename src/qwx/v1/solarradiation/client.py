@@ -11,11 +11,12 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import Any, cast
 
-from qwx._cachekey import Family, Key, Params
+from qwx._cachekey import Family, Key, Params, SolarParams
 from qwx._service import Service
+from qwx._upstream import HOURS
 from qwx.errors import InvalidParameterError
 from qwx.location import Location
-from qwx.request import Request
+from qwx.request import METHOD_GET, Request
 from qwx.v1.solarradiation.types import (
     MAX_FORECAST_HOURS,
     MIN_FORECAST_HOURS,
@@ -40,10 +41,12 @@ def _params(opts: Options) -> Params:
     """把可选参数转成缓存键与查询串共用的参数集。"""
     return Params(
         local_time=opts.local_time,
-        interval=opts.interval,
-        tilt=opts.tilt,
-        azimuth=opts.azimuth,
-        extra=opts.extra,
+        solar=SolarParams(
+            interval=opts.interval,
+            tilt=opts.tilt,
+            azimuth=opts.azimuth,
+            extra=opts.extra,
+        ),
     )
 
 
@@ -90,7 +93,7 @@ class _SolarRadiationCalls(Service):
         lat, lon = loc.path()
         params = _params(options)
         query = params.query()
-        query["hours"] = str(hours)
+        query[HOURS] = str(hours)
         cache_key = str(
             Key(Family.SOLAR_RADIATION)
             .path("forecast")
@@ -100,7 +103,7 @@ class _SolarRadiationCalls(Service):
         )
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path=f"/solarradiation/v1/forecast/{lat}/{lon}",
                 query=query,
                 endpoint=Endpoint,

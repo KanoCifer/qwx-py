@@ -358,7 +358,7 @@ class Client(_ClientBase):
             level = logging.ERROR if response.status_code >= 500 else logging.WARNING
             fields: dict[str, Any] = {
                 **self._base_fields(request),
-                LOG_FIELD_METHOD: request.method or "GET",
+                LOG_FIELD_METHOD: request.http_method(),
                 LOG_FIELD_STATUS: response.status_code,
                 LOG_FIELD_DURATION_MS: duration_ms,
             }
@@ -374,7 +374,7 @@ class Client(_ClientBase):
             "upstream request",
             {
                 **self._base_fields(request),
-                LOG_FIELD_METHOD: request.method or "GET",
+                LOG_FIELD_METHOD: request.http_method(),
                 LOG_FIELD_STATUS: response.status_code,
                 LOG_FIELD_DURATION_MS: duration_ms,
             },
@@ -387,7 +387,7 @@ class Client(_ClientBase):
         重试由上游 5xx、429 或网络错误触发，每次重试前记一条日志。返回的
         响应可能是 4xx 与 5xx，状态码归类交给调用方。
         """
-        method = request.method or "GET"
+        method = request.http_method()
         response: httpx.Response | None = None
         last_error: Exception | None = None
 
@@ -540,7 +540,7 @@ class AsyncClient(_ClientBase):
             level = logging.ERROR if response.status_code >= 500 else logging.WARNING
             fields: dict[str, Any] = {
                 **self._base_fields(request),
-                LOG_FIELD_METHOD: request.method or "GET",
+                LOG_FIELD_METHOD: request.http_method(),
                 LOG_FIELD_STATUS: response.status_code,
                 LOG_FIELD_DURATION_MS: duration_ms,
             }
@@ -556,7 +556,7 @@ class AsyncClient(_ClientBase):
             "upstream request",
             {
                 **self._base_fields(request),
-                LOG_FIELD_METHOD: request.method or "GET",
+                LOG_FIELD_METHOD: request.http_method(),
                 LOG_FIELD_STATUS: response.status_code,
                 LOG_FIELD_DURATION_MS: duration_ms,
             },
@@ -565,7 +565,7 @@ class AsyncClient(_ClientBase):
 
     async def _send(self, request: Request, url: str, headers: dict[str, str]) -> httpx.Response:
         """带退避地重试上游请求，语义与同步版一致。"""
-        method = request.method or "GET"
+        method = request.http_method()
         response: httpx.Response | None = None
         last_error: Exception | None = None
 

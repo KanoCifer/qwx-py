@@ -8,11 +8,12 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import Any, cast
 
-from qwx._cachekey import Family, Key, Params
+from qwx._cachekey import Family, GeoParams, Key, Params
 from qwx._service import Service
-from qwx.errors import InvalidLocationError, InvalidParameterError
+from qwx._upstream import LOCATION, TYPE
+from qwx.errors import InvalidLocationError
 from qwx.location import Location
-from qwx.request import Request
+from qwx.request import METHOD_GET, Request
 
 from .types import (
     CityResult,
@@ -33,19 +34,6 @@ __all__ = ["AsyncGeoService", "GeoService"]
 CACHE_TTL = timedelta(hours=24)
 """GeoAPI 的默认缓存时长：地理信息几乎不变，缓存久一点。"""
 
-_POI_TYPE_VALUES = frozenset(item.value for item in POIType)
-
-
-def _poi_type_value(typ: POIType | str) -> str:
-    """把 POI 类型归一成上游与缓存键都用的代码。
-
-    闭集外的类型抛 InvalidParameterError，不打上游。
-    """
-    value = typ.value if isinstance(typ, POIType) else str(typ)
-    if value not in _POI_TYPE_VALUES:
-        raise InvalidParameterError(f"qwx: unsupported POI type {value!r}")
-    return value
-
 
 class _GeoCalls(Service):
     """GeoAPI 端点族的方法体。同步与异步共用。"""
@@ -57,14 +45,13 @@ class _GeoCalls(Service):
         params = Params(
             lang=options.lang.api,
             number=options.number,
-            adm=options.adm,
-            range=options.range,
+            geo=GeoParams(adm=options.adm, range=options.range),
         )
         query = params.query()
-        query["location"] = loc.query()
+        query[LOCATION] = loc.query()
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path="/geo/v2/city/lookup",
                 query=query,
                 endpoint=EndpointCity,
@@ -81,20 +68,20 @@ class _GeoCalls(Service):
         opts: Options | None = None,
     ) -> Any:
         """POI 检索的请求参数与发送。"""
-        type_code = _poi_type_value(typ)
+        type_code = POIType.validate(typ)
         options = opts if opts is not None else Options()
         options.lang.validate()
         params = Params(
             lang=options.lang.api,
             number=options.number,
-            city=options.city,
+            geo=GeoParams(city=options.city),
         )
         query = params.query()
-        query["location"] = loc.query()
-        query["type"] = type_code
+        query[LOCATION] = loc.query()
+        query[TYPE] = type_code
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path="/geo/v2/poi/lookup",
                 query=query,
                 endpoint=EndpointPOI,
@@ -111,7 +98,7 @@ class _GeoCalls(Service):
         opts: POIRangeOptions | None = None,
     ) -> Any:
         """POI 范围检索的请求参数与发送。"""
-        type_code = _poi_type_value(typ)
+        type_code = POIType.validate(typ)
         if not loc.has_coordinates():
             raise InvalidLocationError("qwx: POI range requires coordinates")
         options = opts if opts is not None else POIRangeOptions()
@@ -119,14 +106,14 @@ class _GeoCalls(Service):
         params = Params(
             lang=options.lang.api,
             number=options.number,
-            radius=options.radius,
+            geo=GeoParams(radius=options.radius),
         )
         query = params.query()
-        query["location"] = loc.query()
-        query["type"] = type_code
+        query[LOCATION] = loc.query()
+        query[TYPE] = type_code
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path="/geo/v2/poi/range",
                 query=query,
                 endpoint=EndpointPOIRange,
@@ -145,11 +132,11 @@ class _GeoCalls(Service):
         params = Params(
             lang=options.lang.api,
             number=options.number,
-            range=options.range,
+            geo=GeoParams(range=options.range),
         )
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path="/geo/v2/city/top",
                 query=params.query(),
                 endpoint=EndpointTopCities,

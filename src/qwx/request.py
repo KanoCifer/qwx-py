@@ -11,7 +11,14 @@ from typing import Any, Protocol, runtime_checkable
 
 from qwx.ttl import Endpoint
 
-__all__ = ["AsyncDoer", "Doer", "Request"]
+__all__ = ["METHOD_GET", "AsyncDoer", "Doer", "Request"]
+
+METHOD_GET = "GET"
+"""GET 方法。
+
+全库只读，没有端点用到别的方法。端点族统一用它构造请求：方法字符串
+只有一处，日志与外部的 Doer 实现读到的也是同一个值。
+"""
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,13 +30,21 @@ class Request:
     表示不缓存。
     """
 
-    method: str = "GET"
+    method: str = METHOD_GET
     path: str = ""
     query: dict[str, str] = field(default_factory=dict)
     cache_key: str = ""
     endpoint: Endpoint = field(default=Endpoint(""))
     ttl: timedelta = timedelta(0)
     out: type[Any] | None = None
+
+    def http_method(self) -> str:
+        """实际发出的 HTTP 方法。
+
+        留空按 GET 处理 —— 约定只在这一处：端点族不写死方法，日志与外部的
+        Doer 实现读同一个值。
+        """
+        return self.method or METHOD_GET
 
 
 @runtime_checkable

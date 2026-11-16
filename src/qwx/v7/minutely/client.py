@@ -13,10 +13,11 @@ from typing import Any, cast
 
 from qwx._cachekey import Family, Key, Params
 from qwx._service import Service
+from qwx._upstream import LOCATION
 from qwx.errors import InvalidLocationError
 from qwx.lang import Lang
 from qwx.location import Location
-from qwx.request import Request
+from qwx.request import METHOD_GET, Request
 from qwx.v7.minutely.types import Endpoint, Result
 
 __all__ = ["AsyncMinutelyService", "MinutelyService"]
@@ -35,11 +36,11 @@ class _MinutelyCalls(Service):
         language.validate()
         params = Params(lang=language.api)
         query = params.query()
-        query["location"] = loc.query()
+        query[LOCATION] = loc.query()
         cache_key = str(Key(Family.MINUTELY).path(loc.query()).params(params))
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path="/v7/minutely/5m",
                 query=query,
                 endpoint=Endpoint,

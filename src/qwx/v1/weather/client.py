@@ -11,11 +11,12 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import Any, cast
 
-from qwx._cachekey import Family, Key, Params
+from qwx._cachekey import Family, Key, v1_params
 from qwx._service import Service
+from qwx._upstream import DAYS, HOURS
 from qwx.errors import InvalidParameterError
 from qwx.location import Location
-from qwx.request import Request
+from qwx.request import METHOD_GET, Request
 from qwx.v1.weather.types import (
     MAX_DAILY_DAYS,
     MAX_HOURLY_HOURS,
@@ -37,11 +38,6 @@ FORECAST_CACHE_TTL = timedelta(seconds=3600)
 """逐时与逐日预报的默认缓存时长（上游约 1 小时更新一次）。"""
 
 
-def _params(opts: Options) -> Params:
-    """把可选参数转成缓存键与查询串共用的参数集。"""
-    return Params(lang=opts.lang.api, local_time=opts.local_time)
-
-
 class _WeatherCalls(Service):
     """天气端点族的方法体。同步与异步共用。"""
 
@@ -49,13 +45,13 @@ class _WeatherCalls(Service):
         options = opts if opts is not None else Options()
         options.lang.validate()
         lat, lon = loc.path()
-        params = _params(options)
+        params = v1_params(options.lang.api, options.local_time)
         cache_key = str(
             Key(Family.WEATHER).path("current").path_coord(loc.lat, loc.lon).params(params)
         )
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path=f"/weather/v1/current/{lat}/{lon}",
                 query=params.query(),
                 endpoint=EndpointCurrent,
@@ -71,9 +67,9 @@ class _WeatherCalls(Service):
         options = opts if opts is not None else Options()
         options.lang.validate()
         lat, lon = loc.path()
-        params = _params(options)
+        params = v1_params(options.lang.api, options.local_time)
         query = params.query()
-        query["hours"] = str(hours)
+        query[HOURS] = str(hours)
         cache_key = str(
             Key(Family.WEATHER)
             .path("hourly")
@@ -83,7 +79,7 @@ class _WeatherCalls(Service):
         )
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path=f"/weather/v1/hourly/{lat}/{lon}",
                 query=query,
                 endpoint=EndpointHourly,
@@ -99,9 +95,9 @@ class _WeatherCalls(Service):
         options = opts if opts is not None else Options()
         options.lang.validate()
         lat, lon = loc.path()
-        params = _params(options)
+        params = v1_params(options.lang.api, options.local_time)
         query = params.query()
-        query["days"] = str(days)
+        query[DAYS] = str(days)
         cache_key = str(
             Key(Family.WEATHER)
             .path("daily")
@@ -111,7 +107,7 @@ class _WeatherCalls(Service):
         )
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path=f"/weather/v1/daily/{lat}/{lon}",
                 query=query,
                 endpoint=EndpointDaily,

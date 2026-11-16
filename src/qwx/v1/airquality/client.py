@@ -12,7 +12,7 @@ from qwx._cachekey import Family, Key, Params
 from qwx._service import Service
 from qwx.errors import InvalidParameterError
 from qwx.location import Location
-from qwx.request import Request
+from qwx.request import METHOD_GET, Request
 
 from .types import (
     Current,
@@ -49,7 +49,7 @@ class _AirQualityCalls(Service):
         params = Params(lang=options.lang.api)
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path=f"/airquality/v1/current/{lat}/{lon}",
                 query=params.query(),
                 endpoint=EndpointCurrent,
@@ -72,7 +72,7 @@ class _AirQualityCalls(Service):
         params = Params(lang=options.lang.api)
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path=f"/airquality/v1/daily/{lat}/{lon}",
                 query=params.query(),
                 endpoint=EndpointDaily,
@@ -95,7 +95,7 @@ class _AirQualityCalls(Service):
         params = Params(lang=options.lang.api)
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path=f"/airquality/v1/hourly/{lat}/{lon}",
                 query=params.query(),
                 endpoint=EndpointHourly,
@@ -119,7 +119,7 @@ class _AirQualityCalls(Service):
         params = Params(lang=options.lang.api)
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path=f"/airquality/v1/stations/{station_id}",
                 query=params.query(),
                 endpoint=EndpointStation,

@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from qwx.errors import InvalidLocationError
+from qwx.errors import InvalidLocationError, InvalidParameterError
 from qwx.geo import (
     CityResult,
     Options,
@@ -193,6 +193,18 @@ def test_poi_type_members_are_closed_set() -> None:
     assert POIType.SCENIC.value == "scenic"
     assert POIType.CSTA.value == "CSTA"
     assert POIType.TSTA.value == "TSTA"
+
+
+def test_poi_type_validate_returns_the_code() -> None:
+    """闭集内的类型归一成上游与缓存键都用的代码。"""
+    assert POIType.validate(POIType.SCENIC) == "scenic"
+    assert POIType.validate("CSTA") == "CSTA"
+
+
+def test_poi_type_validate_rejects_unknown_type() -> None:
+    """闭集外的类型在打上游之前就抛错。"""
+    with pytest.raises(InvalidParameterError):
+        POIType.validate("bad")
 
 
 def test_json_round_trip_keeps_fields() -> None:

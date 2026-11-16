@@ -16,9 +16,11 @@ from datetime import timedelta
 from typing import Any, cast
 
 from qwx._cachekey import Family, Key
+from qwx._param import validate_date
 from qwx._service import Service
+from qwx._upstream import DATE, LOCATION
 from qwx.errors import InvalidParameterError
-from qwx.request import Request
+from qwx.request import METHOD_GET, Request
 
 from .types import Endpoint, Result
 
@@ -28,19 +30,6 @@ CACHE_TTL = timedelta(seconds=3600)
 """潮汐接口的默认缓存时长：上游一天更新几次，缓存一小时。"""
 
 
-def _validate_date(date: str) -> None:
-    """校验日期格式为 YYYYMMDD。
-
-    只校验 8 位数字，不校验日历合法性 —— 与 Go 版口径一致：非法日期
-    （如 20211301）交给上游回 400，客户端不抢判。
-
-    潮汐窗口下界是站点当地当天，所以「今天」由调用方按站点当地时间算，
-    这里不判断日期范围 —— 那要拿「今天」比，上游自己会回 400。
-    """
-    if len(date) != 8 or not date.isdigit():
-        raise InvalidParameterError(f"qwx: date {date!r} must be in YYYYMMDD format")
-
-
 class _OceanCalls(Service):
     """潮汐端点族的方法体。同步与异步共用。"""
 
@@ -48,12 +37,12 @@ class _OceanCalls(Service):
         """潮汐的请求参数与发送。"""
         if not station_id:
             raise InvalidParameterError("qwx: empty tide station ID")
-        _validate_date(date)
+        validate_date(date)
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path="/v7/ocean/tide",
-                query={"location": station_id, "date": date},
+                query={LOCATION: station_id, DATE: date},
                 endpoint=Endpoint,
                 cache_key=str(Key(Family.TIDE).path(station_id, date)),
                 ttl=CACHE_TTL,
@@ -74,12 +63,12 @@ class OceanService(_OceanCalls):
     def tide(self, station_id: str, date: str) -> Result:
         """查询潮汐。
 
-        调 GET /v7/ocean/tide?location=...&date=YYYYMMDD。
+        调 GET /v7/ocean/tide?location=...&date=yyyyMMdd。
 
         station_id 是**潮汐站 ID**（如 "P2352"），不是坐标、不是 LocationID。
         用 geo 包的 LookupPOI 配 POITSTA 可以检索到本站点。
 
-        date 是潮汐站**当地日期**，格式 "YYYYMMDD"，客户端校验它是合法
+        date 是潮汐站**当地日期**，格式 "yyyyMMdd"，客户端校验它是合法
         日历日期。
 
         **日期必须是潮汐站当地的当天**：潮汐窗口的下界是当地当天，用
@@ -110,11 +99,11 @@ class AsyncOceanService(_OceanCalls):
     async def tide(self, station_id: str, date: str) -> Result:
         """查询潮汐。
 
-        调 GET /v7/ocean/tide?location=...&date=YYYYMMDD。
+        调 GET /v7/ocean/tide?location=...&date=yyyyMMdd。
 
         station_id 是潮汐站 ID（如 "P2352"），不是坐标、不是 LocationID。
 
-        date 是潮汐站当地日期，格式 "YYYYMMDD"，且**必须是当地当天** ——
+        date 是潮汐站当地日期，格式 "yyyyMMdd"，且**必须是当地当天** ——
         潮汐窗口下界是当地当天，北京时间 00:00–08:00 会落到「昨天」，
         上游会回 400。
 

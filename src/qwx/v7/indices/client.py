@@ -17,10 +17,11 @@ from typing import Any, cast
 
 from qwx._cachekey import Family, Key, Params
 from qwx._service import Service
+from qwx._upstream import LOCATION, TYPE
 from qwx.errors import InvalidLocationError, InvalidParameterError
 from qwx.lang import Lang
 from qwx.location import Location
-from qwx.request import Request
+from qwx.request import METHOD_GET, Request
 
 from .types import (
     MAX_TYPE,
@@ -82,8 +83,8 @@ class _IndicesCalls(Service):
         type_segment = _type_segment(types)
         params = Params(lang=language.api)
         query = params.query()
-        query["location"] = loc.query()
-        query["type"] = type_segment
+        query[LOCATION] = loc.query()
+        query[TYPE] = type_segment
         cache_key = str(
             Key(Family.INDICES)
             .path(loc.query(), f"t{type_segment}")
@@ -92,7 +93,7 @@ class _IndicesCalls(Service):
         )
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path=f"/v7/indices/{days}d",
                 query=query,
                 endpoint=Endpoint,

@@ -8,14 +8,16 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any, cast
 
 from qwx._cachekey import Family, Key, Params
+from qwx._param import validate_date
 from qwx._service import Service
-from qwx.errors import InvalidLocationError, InvalidParameterError
+from qwx._upstream import DATE, LOCATION
+from qwx.errors import InvalidLocationError
 from qwx.location import Location
-from qwx.request import Request
+from qwx.request import METHOD_GET, Request
 from qwx.v7.historical.types import Endpoint, Options, Result
 
 __all__ = ["AsyncHistoricalService", "HistoricalService"]
@@ -24,37 +26,23 @@ CACHE_TTL = timedelta(seconds=86400)
 """历史天气的默认缓存时长：某一天的数据过去之后就不再变。"""
 
 
-def _validate_date(date: str) -> None:
-    """校验日期是 yyyyMMdd 形态的真实日历日期。
-
-    日期范围（上游只给最近 10 天、不含今天）不在这里判断 —— 那要拿「今天」
-    比，上游自己会回 400。
-    """
-    if len(date) != 8 or not date.isdigit():
-        raise InvalidParameterError(f"qwx: date {date!r} must be in yyyyMMdd format")
-    try:
-        datetime.strptime(date, "%Y%m%d")
-    except ValueError:
-        raise InvalidParameterError(f"qwx: date {date!r} is not a valid calendar date") from None
-
-
 class _HistoricalCalls(Service):
     """历史天气端点族的方法体。同步与异步共用。"""
 
     def _weather_call(self, loc: Location, date: str, opts: Options | None = None) -> Any:
         if not loc.id:
             raise InvalidLocationError("qwx: historical weather requires a LocationID")
-        _validate_date(date)
+        validate_date(date)
         options = opts if opts is not None else Options()
         options.lang.validate()
         params = Params(lang=options.lang.api)
         query = params.query()
-        query["location"] = loc.id
-        query["date"] = date
+        query[LOCATION] = loc.id
+        query[DATE] = date
         cache_key = str(Key(Family.HISTORICAL).path("weather", loc.id, date).params(params))
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path="/v7/historical/weather",
                 query=query,
                 endpoint=Endpoint,

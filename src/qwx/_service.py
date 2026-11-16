@@ -22,6 +22,8 @@ class Service:
     """
 
     def __init__(self, base: Any) -> None:
+        if base is None:
+            raise TypeError(f"qwx: {type(self).__name__} needs a base client")
         self._base = base
 
     def _call(self, request: Request) -> Any:

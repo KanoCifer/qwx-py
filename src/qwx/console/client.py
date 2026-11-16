@@ -12,7 +12,7 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import Any, cast
 
-from qwx._cachekey import Family, Key, Params
+from qwx._cachekey import ConsoleParams, Family, Key, Params
 from qwx._service import Service
 from qwx.console.types import (
     EndpointFinance,
@@ -22,7 +22,7 @@ from qwx.console.types import (
     StatsResult,
 )
 from qwx.errors import InvalidParameterError
-from qwx.request import Request
+from qwx.request import METHOD_GET, Request
 
 __all__ = ["AsyncConsoleService", "ConsoleService"]
 
@@ -35,7 +35,9 @@ CONSOLE_CACHE_TTL = timedelta(seconds=3600)
 
 def _stats_params(opts: StatsOptions) -> Params:
     """把可选参数转成缓存键与查询串共用的参数集。"""
-    return Params(project=opts.project, credential=opts.credential)
+    return Params(
+        console=ConsoleParams(project=opts.project, credential=opts.credential),
+    )
 
 
 class _ConsoleCalls(Service):
@@ -45,7 +47,7 @@ class _ConsoleCalls(Service):
         cache_key = str(Key(Family.CONSOLE).path("finance"))
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path="/finance/v1/summary",
                 query={},
                 endpoint=EndpointFinance,
@@ -63,7 +65,7 @@ class _ConsoleCalls(Service):
         cache_key = str(Key(Family.CONSOLE).path("stats").params(params))
         return self._call(
             Request(
-                method="GET",
+                method=METHOD_GET,
                 path="/metrics/v1/stats",
                 query=params.query(),
                 endpoint=EndpointStats,
