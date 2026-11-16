@@ -93,7 +93,7 @@ disallow_untyped_defs = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 addopts = "-ra"
 markers = [
     "live: 需要真实凭据的联网冒烟测试",
